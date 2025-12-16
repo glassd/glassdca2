@@ -1,13 +1,21 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import Hero from "~/components/Hero";
+import type { Route } from "../+types/root";
+import TechStack from "~/components/TechStack";
+import BlogGrid from "~/components/BlogGrid";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "David Glass' Awesome Portfolio" },
+    { name: "glassd", content: "Whatever I want" },
   ];
 }
 
 export default function Home() {
-  return <Welcome />;
+  return (
+    <div className="min-h-screen dark">
+      <Hero />
+      <TechStack />
+      <BlogGrid />
+    </div>
+  );
 }
