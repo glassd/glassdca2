@@ -1,5 +1,7 @@
-import { ArrowRight, Github, Linkedin, Twitter } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router";
 
 export default function Hero() {
   return (
@@ -52,18 +54,22 @@ export default function Hero() {
             style={{ animationDelay: "0.4s" }}
           >
             <Button
+              asChild
               size="lg"
               className="gradient-bg glow-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-xl hover:scale-105 transition-transform"
             >
-              View Projects
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <Link to="/projects">
+                View Projects
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
             <Button
+              asChild
               size="lg"
               variant="outline"
               className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 px-8 py-6 text-lg rounded-xl"
             >
-              Contact Me
+              <Link to="/contact">Contact Me</Link>
             </Button>
           </div>
 
@@ -73,22 +79,22 @@ export default function Hero() {
             style={{ animationDelay: "0.5s" }}
           >
             <a
-              href="#"
+              href="https://github.com/glassd"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Github className="h-5 w-5" />
+              <Icon icon="line-md:github" className="h-5 w-5" />
             </a>
             <a
-              href="#"
+              href="https://x.com/daglassd"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Twitter className="h-5 w-5" />
+              <Icon icon="ri:twitter-line" className="h-5 w-5" />
             </a>
             <a
-              href="#"
+              href="https://www.linkedin.com/in/glassd/"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Linkedin className="h-5 w-5" />
+              <Icon icon="line-md:linkedin" className="h-5 w-5" />
             </a>
           </div>
         </div>

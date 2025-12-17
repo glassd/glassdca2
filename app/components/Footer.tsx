@@ -1,4 +1,6 @@
 import { Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Icon } from "@iconify/react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo.svg";
 
 export default function Footer() {
@@ -14,7 +16,7 @@ export default function Footer() {
                 David Glass
               </span>
             </div>
-            <p className="text-muted-foreground text-sm max-w-sm">
+            <p className="text-muted-foreground text-sm max-w-m">
               Building exceptional web experiences with passion and precision.
             </p>
           </div>
@@ -22,29 +24,29 @@ export default function Footer() {
           {/* Social Links */}
           <div className="flex items-center gap-4">
             <a
-              href="#"
+              href="https://github.com/glassd"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Github className="h-5 w-5" />
+              <Icon icon="line-md:github" className="h-5 w-5" />
             </a>
             <a
-              href="#"
+              href="https://x.com/daglassd"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Twitter className="h-5 w-5" />
+              <Icon icon="ri:twitter-line" className="h-5 w-5" />
             </a>
             <a
-              href="#"
+              href="https://www.linkedin.com/feed/"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Linkedin className="h-5 w-5" />
+              <Icon icon="line-md:linkedin" className="h-5 w-5" />
             </a>
-            <a
-              href="#"
+            <Link
+              to="/contact"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
               <Mail className="h-5 w-5" />
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -52,6 +54,7 @@ export default function Footer() {
           <p className="text-sm text-muted-foreground">
             © 2025 David Glass. All rights reserved.
           </p>
+          {/*
           <div className="flex items-center gap-6">
             <a
               href="#"
@@ -66,6 +69,7 @@ export default function Footer() {
               Terms
             </a>
           </div>
+          */}
         </div>
       </div>
     </footer>

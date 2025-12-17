@@ -46,9 +46,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <div className="min-h-screen dark">
+    <div className="min-h-screen dark gradient-hero flex flex-col">
       <Navbar />
-      <main>
+      <main className="grow">
         <Outlet />
       </main>
       <Footer />

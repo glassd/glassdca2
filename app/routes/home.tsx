@@ -12,7 +12,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   return (
-    <div className="min-h-screen dark">
+    <div id="top" className="min-h-screen dark">
       <Hero />
       <TechStack />
       <BlogGrid />

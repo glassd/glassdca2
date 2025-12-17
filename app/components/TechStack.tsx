@@ -1,12 +1,25 @@
+import {
+  Code2,
+  Cuboid,
+  Cloud,
+  Database,
+  Braces,
+  Atom,
+  Server,
+  Palette,
+} from "lucide-react";
+
+import { Icon } from "@iconify/react";
+
 const technologies = [
-  { name: "React", icon: "⚛️" },
-  { name: "TypeScript", icon: "📘" },
-  { name: "Next.js", icon: "▲" },
-  { name: "Node.js", icon: "🟢" },
-  { name: "Tailwind", icon: "🎨" },
-  { name: "PostgreSQL", icon: "🐘" },
-  { name: "GraphQL", icon: "◈" },
-  { name: "AWS", icon: "☁️" },
+  { name: "React", Icon: "simple-icons:react" },
+  { name: "TypeScript", Icon: "nonicons:typescript-16" },
+  { name: "Next.js", Icon: "ri:nextjs-line" },
+  { name: "Node.js", Icon: "devicon-plain:nodejs" },
+  { name: "Tailwind", Icon: "teenyicons:tailwind-outline" },
+  { name: "PostgreSQL", Icon: "simple-icons:postgresql" },
+  { name: "GraphQL", Icon: "simple-icons:graphql" },
+  { name: "AWS", Icon: "lineicons:aws" },
 ];
 
 export default function TechStack() {
@@ -30,8 +43,11 @@ export default function TechStack() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="text-center">
-                <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">
-                  {tech.icon}
+                <div className="mb-3 flex justify-center group-hover:scale-110 transition-transform">
+                  <Icon
+                    icon={tech.Icon}
+                    className="h-9 w-9 text-foreground/80 group-hover:text-foreground"
+                  />
                 </div>
                 <p className="text-sm font-medium text-foreground/80 group-hover:text-foreground transition-colors">
                   {tech.name}
