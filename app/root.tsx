@@ -35,10 +35,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1 viewport-fit=cover"
         />
+        <meta name="theme-color" content="#101218" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
-          name="theme-color"
-          content="#101218"
-          media="(prefers-color-scheme: dark)"
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
         />
         <Meta />
         <Links />
