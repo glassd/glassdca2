@@ -2,8 +2,7 @@ import { client } from "../../lib/sanity";
 import type { Route } from "./+types/projects";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // Simplified query - no ordering, just get all projects
-  const query = `*[_type == "project"] {
+  const query = `*[_type == "project"] | order(publishedAt desc) {
     _id,
     title,
     slug,
