@@ -15,7 +15,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   try {
     const projects = await client.fetch(query);
-    return Response.json(projects);
+    return Response.json(projects, {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    });
   } catch (error) {
     console.error("Error fetching projects:", error);
     return Response.json(

@@ -122,7 +122,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       },
       {
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
         },
       },
     );

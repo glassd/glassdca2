@@ -19,7 +19,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
     return Response.json(tags, {
       headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Cache-Control": "public, max-age=600, stale-while-revalidate=120",
       },
     });
   } catch (error: any) {
