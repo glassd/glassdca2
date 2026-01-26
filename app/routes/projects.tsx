@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/projects";
 import { urlFor } from "../lib/sanity";
 import { ProjectCard } from "../components/ProjectCard";
+import SkeletonCard from "../components/SkeletonCard";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -43,23 +44,21 @@ export default function Projects() {
     fetchProjects();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-40 text-center">
-        <p className="text-gray-600 dark:text-gray-300">Loading projects...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-40">
-      <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+    <div className="container mx-auto px-4 py-24">
+      <h1 className="text-4xl font-bold text-foreground mb-8 text-center">
         My Projects
       </h1>
 
-      {projects.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-xl text-gray-600 dark:text-gray-300">
+          <p className="text-xl text-muted-foreground">
             No projects found. Check back soon!
           </p>
         </div>

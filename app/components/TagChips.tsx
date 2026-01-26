@@ -48,7 +48,7 @@ export default function TagChips({
 
   return (
     <fieldset
-      className={`rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 ${className}`}
+      className={`rounded-xl border border-border bg-card ${className}`}
       {...rest}
       aria-describedby={descId}
       aria-labelledby={labelId}
@@ -58,13 +58,13 @@ export default function TagChips({
         className={
           hideLabel
             ? "sr-only"
-            : "px-3 py-2 text-sm font-medium text-gray-900 dark:text-gray-100"
+            : "px-3 py-2 text-sm font-medium text-foreground"
         }
       >
         {label}
       </legend>
 
-      <div className="px-3 pb-2 -mt-1">
+      <div className="px-3 pb-3 -mt-1">
         <p id={descId} className="sr-only">
           Use the arrow keys and spacebar to toggle one or more tags. Press
           Clear to reset.
@@ -77,11 +77,11 @@ export default function TagChips({
               type="button"
               onClick={onClear}
               disabled={!hasSelection}
-              className={`inline-flex items-center rounded-md border px-2.5 py-1.5 text-xs font-medium transition
+              className={`inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition
                 ${
                   hasSelection
-                    ? "border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    : "border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                    ? "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    : "border-border/50 text-muted-foreground/50 cursor-not-allowed"
                 }`}
               aria-disabled={!hasSelection}
               aria-label="Clear selected tags"
@@ -91,7 +91,7 @@ export default function TagChips({
           )}
           {hasSelection && (
             <span
-              className="text-xs text-gray-500 dark:text-gray-400"
+              className="text-xs text-muted-foreground"
               aria-live="polite"
             >
               {selected.length} selected
@@ -107,11 +107,11 @@ export default function TagChips({
               <label
                 key={t._id}
                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm cursor-pointer transition
-                  focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500
+                  focus-within:outline-none focus-within:ring-2 focus-within:ring-primary
                   ${
                     checked
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200"
-                      : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
               >
                 <input

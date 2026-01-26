@@ -48,14 +48,14 @@ export default function BlogCard({
 
   return (
     <article
-      className={`group rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow ${className}`}
+      className={`group rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 transition-all ${className}`}
     >
       <a
         href={`/blog/${slug}`}
-        className="block focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="block focus:outline-none focus:ring-2 focus:ring-primary"
       >
         {img && (
-          <div className="relative w-full h-48 overflow-hidden bg-gray-100 dark:bg-gray-800">
+          <div className="relative w-full h-48 overflow-hidden bg-muted">
             <img
               src={img}
               alt={title}
@@ -65,13 +65,13 @@ export default function BlogCard({
           </div>
         )}
 
-        <div className="p-4">
+        <div className="p-6">
           <header className="mb-2">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">
+            <h3 className="text-lg font-semibold text-foreground leading-snug">
               {title}
             </h3>
             {prettyDate && (
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {prettyDate}
               </p>
             )}
@@ -82,7 +82,7 @@ export default function BlogCard({
               {tags.map((t) => (
                 <span
                   key={t._id}
-                  className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-300"
+                  className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground"
                 >
                   {t.title}
                 </span>
@@ -90,7 +90,7 @@ export default function BlogCard({
             </div>
           )}
 
-          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+          <p className="text-sm text-muted-foreground line-clamp-3">
             {snippet}
           </p>
         </div>

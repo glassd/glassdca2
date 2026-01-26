@@ -13,8 +13,8 @@ export function meta({}: Route.MetaArgs) {
 
 export default function ContactSent() {
   return (
-    <div className="container mx-auto px-4 py-30 max-w-2xl">
-      <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-6">
+    <div className="container mx-auto px-4 py-24 max-w-2xl">
+      <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-600 text-white">
             <svg
@@ -33,11 +33,11 @@ export default function ContactSent() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground">
               Message sent
             </h1>
-            <p className="mt-2 text-gray-700 dark:text-gray-200">
-              Thanks for reaching out. Your message was delivered, and I’ll get
+            <p className="mt-2 text-muted-foreground">
+              Thanks for reaching out. Your message was delivered, and I'll get
               back to you as soon as I can.
             </p>
           </div>
@@ -47,19 +47,19 @@ export default function ContactSent() {
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Link
           to="/"
-          className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700"
+          className="inline-flex items-center justify-center rounded-xl gradient-bg px-6 py-2.5 font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         >
           Back to home
         </Link>
         <Link
           to="/contact"
-          className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
+          className="inline-flex items-center justify-center rounded-xl border border-border px-6 py-2.5 font-medium text-foreground hover:bg-card transition-colors"
         >
           Send another message
         </Link>
         <Link
           to="/blog"
-          className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-700 px-4 py-2 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
+          className="inline-flex items-center justify-center rounded-xl border border-border px-6 py-2.5 font-medium text-foreground hover:bg-card transition-colors"
         >
           View the blog
         </Link>

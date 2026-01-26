@@ -175,8 +175,8 @@ export default function Blog() {
   };
 
   return (
-    <div className="container mx-auto max-w-8xl px-4 py-20">
-      <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+    <div className="container mx-auto max-w-7xl px-4 py-24">
+      <h1 className="text-4xl font-bold text-foreground mb-6">
         Blog
       </h1>
 
@@ -191,7 +191,7 @@ export default function Blog() {
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-gray-600 dark:text-gray-300">
+            <div className="text-muted-foreground">
               No posts found.
             </div>
           ) : (
@@ -211,7 +211,7 @@ export default function Blog() {
           )}
 
           {error && (
-            <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+            <div className="mt-4 text-sm text-destructive">
               Error loading posts: {error}
             </div>
           )}
@@ -221,8 +221,8 @@ export default function Blog() {
 
           {/* Loading indicator at bottom */}
           {loading && posts.length > 0 && (
-            <div className="mt-4 text-gray-600 dark:text-gray-300">
-              Loading more…
+            <div className="mt-4 text-muted-foreground">
+              Loading more...
             </div>
           )}
         </div>
@@ -240,7 +240,7 @@ export default function Blog() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search posts..."
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
 
@@ -257,9 +257,9 @@ export default function Blog() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="inline-flex items-center rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
             >
-              Clear
+              Clear filters
             </button>
           </div>
         </aside>

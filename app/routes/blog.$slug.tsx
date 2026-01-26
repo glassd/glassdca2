@@ -62,7 +62,7 @@ export async function loader({ params }: Route.LoaderArgs) {
   }
 
   return Response.json(post, {
-    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
   });
 }
 
@@ -247,7 +247,7 @@ export default function BlogPostRoute() {
           <h1
             {...props}
             id={id || undefined}
-            className="mt-8 text-3xl font-bold text-gray-900 dark:text-white"
+            className="mt-8 text-3xl font-bold text-foreground"
           />
         );
       },
@@ -257,7 +257,7 @@ export default function BlogPostRoute() {
           <h2
             {...props}
             id={id || undefined}
-            className="mt-8 text-2xl font-semibold text-gray-900 dark:text-white"
+            className="mt-8 text-2xl font-semibold text-foreground"
           />
         );
       },
@@ -267,39 +267,39 @@ export default function BlogPostRoute() {
           <h3
             {...props}
             id={id || undefined}
-            className="mt-6 text-xl font-semibold text-gray-900 dark:text-white"
+            className="mt-6 text-xl font-semibold text-foreground"
           />
         );
       },
       p: (props: any) => (
         <p
           {...props}
-          className="my-4 leading-7 text-gray-800 dark:text-gray-200"
+          className="my-4 leading-7 text-foreground/90"
         />
       ),
       ul: (props: any) => (
         <ul
           {...props}
-          className="my-4 list-disc pl-6 space-y-1 text-gray-800 dark:text-gray-200"
+          className="my-4 list-disc pl-6 space-y-1 text-foreground/90"
         />
       ),
       ol: (props: any) => (
         <ol
           {...props}
-          className="my-4 list-decimal pl-6 space-y-1 text-gray-800 dark:text-gray-200"
+          className="my-4 list-decimal pl-6 space-y-1 text-foreground/90"
         />
       ),
       li: (props: any) => <li {...props} className="leading-7" />,
       code: (props: any) => (
         <code
           {...props}
-          className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0.5 text-sm text-gray-900 dark:text-gray-100"
+          className="rounded bg-secondary px-1 py-0.5 text-sm text-foreground"
         />
       ),
       pre: (props: any) => (
         <pre
           {...props}
-          className="my-4 overflow-x-auto rounded-md bg-gray-900 p-4 text-gray-100"
+          className="my-4 overflow-x-auto rounded-xl bg-[#1a1a2e] p-4 text-gray-100"
         />
       ),
       a: (props: any) => {
@@ -310,7 +310,7 @@ export default function BlogPostRoute() {
             {...props}
             target={isExternal ? "_blank" : undefined}
             rel={isExternal ? "noopener noreferrer" : undefined}
-            className="text-indigo-600 underline decoration-indigo-300 hover:decoration-indigo-500 dark:text-indigo-400"
+            className="text-primary underline decoration-primary/30 hover:decoration-primary"
           />
         );
       },
@@ -320,18 +320,18 @@ export default function BlogPostRoute() {
         <img
           {...props}
           loading="lazy"
-          className="my-6 max-h-[600px] w-full rounded-md object-contain"
+          className="my-6 max-h-[600px] w-full rounded-xl object-contain"
           alt={props.alt || ""}
         />
       ),
       blockquote: (props: any) => (
         <blockquote
           {...props}
-          className="my-6 border-l-4 border-indigo-300/60 pl-4 italic text-gray-700 dark:text-gray-300"
+          className="my-6 border-l-4 border-primary/40 pl-4 italic text-muted-foreground"
         />
       ),
       hr: (props: any) => (
-        <hr {...props} className="my-8 border-gray-200 dark:border-gray-800" />
+        <hr {...props} className="my-8 border-border" />
       ),
       table: (props: any) => (
         <div className="my-6 overflow-x-auto">
@@ -341,13 +341,13 @@ export default function BlogPostRoute() {
       th: (props: any) => (
         <th
           {...props}
-          className="border-b border-gray-300 bg-gray-50 px-3 py-2 text-left font-medium dark:border-gray-700 dark:bg-gray-800"
+          className="border-b border-border bg-secondary px-3 py-2 text-left font-medium"
         />
       ),
       td: (props: any) => (
         <td
           {...props}
-          className="border-b border-gray-200 px-3 py-2 align-top dark:border-gray-800"
+          className="border-b border-border px-3 py-2 align-top"
         />
       ),
     }),
@@ -355,20 +355,20 @@ export default function BlogPostRoute() {
   );
 
   return (
-    <article className="container mx-auto max-w-8xl px-4 py-20">
+    <article className="container mx-auto max-w-7xl px-4 py-24">
       <nav className="mb-6 text-sm">
         <a
           href={backLink}
-          className="inline-flex items-center text-indigo-600 hover:underline dark:text-indigo-400"
+          className="inline-flex items-center text-primary hover:underline"
         >
           ← Back to Blog
         </a>
-        <div className="mt-2 text-gray-500 dark:text-gray-400">
+        <div className="mt-2 text-muted-foreground">
           <a href={backLink} className="hover:underline">
             Blog
           </a>
           <span className="mx-2">/</span>
-          <span className="text-gray-700 dark:text-gray-300">{post.title}</span>
+          <span className="text-foreground">{post.title}</span>
         </div>
       </nav>
       {/* Content + Sidebar */}
@@ -376,12 +376,12 @@ export default function BlogPostRoute() {
         <div className="lg:col-span-3">
           {/* Title + meta */}
           <header className="mb-8">
-            <h1 className="text-4xl font-bold leading-tight text-gray-900 dark:text-white">
+            <h1 className="text-4xl font-bold leading-tight text-foreground">
               {post.title}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
               {prettyDate && (
-                <time className="text-gray-500 dark:text-gray-400">
+                <time className="text-muted-foreground">
                   {prettyDate}
                 </time>
               )}
@@ -391,7 +391,7 @@ export default function BlogPostRoute() {
                     <a
                       key={t._id}
                       href={`/blog?tags=${encodeURIComponent(t.slug)}`}
-                      className="inline-flex items-center rounded-full border border-gray-300 bg-white px-2.5 py-0.5 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                      className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                     >
                       #{t.title}
                     </a>
@@ -403,7 +403,7 @@ export default function BlogPostRoute() {
 
           {/* Hero image */}
           {hero && (
-            <div className="mb-8 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+            <div className="mb-8 overflow-hidden rounded-xl border border-border">
               <img
                 src={hero}
                 alt={post.title}
@@ -412,7 +412,7 @@ export default function BlogPostRoute() {
               />
             </div>
           )}
-          <section className="prose prose-indigo max-w-none dark:prose-invert">
+          <section className="prose prose-invert max-w-none">
             {post.bodyMarkdown ? (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -422,7 +422,7 @@ export default function BlogPostRoute() {
                 {post.bodyMarkdown}
               </ReactMarkdown>
             ) : (
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-muted-foreground">
                 This post has no content yet.
               </p>
             )}
@@ -440,11 +440,11 @@ export default function BlogPostRoute() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search posts..."
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <a
                 href={backLink}
-                className="mt-2 inline-flex items-center text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                className="mt-2 inline-flex items-center text-sm text-primary hover:underline"
               >
                 View results →
               </a>
@@ -471,7 +471,7 @@ export default function BlogPostRoute() {
 
             {toc.length > 0 && (
               <div>
-                <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="mb-2 text-sm font-semibold text-foreground">
                   Table of contents
                 </h2>
                 <ul className="space-y-1 text-sm">
@@ -484,7 +484,7 @@ export default function BlogPostRoute() {
                     >
                       <a
                         href={`#${item.id}`}
-                        className="text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
+                        className="text-muted-foreground hover:text-primary transition-colors"
                       >
                         {item.text}
                       </a>
@@ -496,7 +496,7 @@ export default function BlogPostRoute() {
 
             {readNext.length > 0 && (
               <div>
-                <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <h2 className="mb-2 text-sm font-semibold text-foreground">
                   Read next
                 </h2>
                 <ul className="space-y-2">
@@ -504,7 +504,7 @@ export default function BlogPostRoute() {
                     <li key={p._id}>
                       <a
                         href={`/blog/${p.slug}${linkSuffix}`}
-                        className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                        className="text-sm text-primary hover:underline"
                       >
                         {p.title}
                       </a>

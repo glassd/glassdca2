@@ -188,13 +188,13 @@ export default function Contact() {
   const startedAt = Date.now();
 
   return (
-    <div className="container mx-auto px-4 py-30 max-w-2xl">
-      <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+    <div className="container mx-auto px-4 py-24 max-w-2xl">
+      <h1 className="text-4xl font-bold text-foreground mb-6">
         Contact Me
       </h1>
 
       {data?.ok ? (
-        <div className="rounded-md border border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30 p-4 text-green-800 dark:text-green-200">
+        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-green-400">
           Thanks! Your message has been sent.
         </div>
       ) : (
@@ -214,7 +214,7 @@ export default function Contact() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-muted-foreground"
             >
               Your email
             </label>
@@ -223,10 +223,10 @@ export default function Contact() {
               name="email"
               type="email"
               required
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {data?.errors?.email && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm text-destructive">
                 {data.errors.email}
               </p>
             )}
@@ -235,7 +235,7 @@ export default function Contact() {
           <div>
             <label
               htmlFor="subject"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-muted-foreground"
             >
               Subject
             </label>
@@ -245,10 +245,10 @@ export default function Contact() {
               type="text"
               required
               maxLength={200}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {data?.errors?.subject && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm text-destructive">
                 {data.errors.subject}
               </p>
             )}
@@ -257,7 +257,7 @@ export default function Contact() {
           <div>
             <label
               htmlFor="message"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-muted-foreground"
             >
               Message
             </label>
@@ -267,17 +267,17 @@ export default function Contact() {
               required
               rows={8}
               maxLength={5000}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {data?.errors?.message && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              <p className="mt-1 text-sm text-destructive">
                 {data.errors.message}
               </p>
             )}
           </div>
 
           {data?.errors?.general && (
-            <div className="rounded-md border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-3 text-red-800 dark:text-red-200">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-destructive">
               {data.errors.general}
             </div>
           )}
@@ -286,9 +286,9 @@ export default function Contact() {
             <button
               type="submit"
               disabled={sending}
-              className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="inline-flex items-center rounded-xl gradient-bg px-6 py-2.5 font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
             >
-              {sending ? "Sending…" : "Send message"}
+              {sending ? "Sending..." : "Send message"}
             </button>
           </div>
         </Form>
