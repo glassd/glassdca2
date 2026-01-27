@@ -104,15 +104,14 @@ export default function BlogGrid() {
             {Array.from({ length: 3 }).map((_, index) => (
               <article
                 key={index}
-                className="relative overflow-hidden rounded-2xl bg-card border border-border animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.15}s` }}
+                className="relative overflow-hidden rounded-2xl bg-card border border-border animate-pulse"
               >
-                <div className="h-48 bg-muted/40" />
+                <div className="h-48 bg-muted/50" />
                 <div className="p-6 space-y-3">
-                  <div className="h-4 w-28 bg-muted/40 rounded" />
-                  <div className="h-6 w-3/4 bg-muted/40 rounded" />
-                  <div className="h-4 w-full bg-muted/40 rounded" />
-                  <div className="h-4 w-5/6 bg-muted/40 rounded" />
+                  <div className="h-4 w-28 bg-muted/50 rounded" />
+                  <div className="h-6 w-3/4 bg-muted/50 rounded" />
+                  <div className="h-4 w-full bg-muted/50 rounded" />
+                  <div className="h-4 w-5/6 bg-muted/50 rounded" />
                 </div>
               </article>
             ))}
