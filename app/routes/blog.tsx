@@ -63,9 +63,7 @@ export default function Blog() {
     let cancelled = false;
     const run = async () => {
       try {
-        const res = await fetch(`/api/blog/tags`, {
-          headers: { "Cache-Control": "no-store" },
-        });
+        const res = await fetch(`/api/blog/tags`);
         if (!res.ok) throw new Error(`Failed to load tags (${res.status})`);
         const data: Tag[] = await res.json();
         if (!cancelled) setAvailableTags(data);
@@ -104,9 +102,7 @@ export default function Blog() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/blog?${queryString}`, {
-        headers: { "Cache-Control": "no-store" },
-      });
+      const res = await fetch(`/api/blog?${queryString}`);
       if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
       const data: BlogResponse = await res.json();
       setPosts((prev) =>

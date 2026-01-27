@@ -24,18 +24,21 @@ interface Project {
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const response = await fetch("/api/projects");
         if (!response.ok) {
-          throw new Error("Failed to fetch projects");
+          throw new Error(`Failed to fetch projects (${response.status})`);
         }
         const data = await response.json();
         setProjects(data);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
+      } catch (err: any) {
+        const msg = err?.message || "Unknown error";
+        console.error("Error fetching projects:", msg);
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -55,6 +58,13 @@ export default function Projects() {
           {Array.from({ length: 6 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-xl text-destructive mb-4">
+            Failed to load projects
+          </p>
+          <p className="text-muted-foreground">{error}</p>
         </div>
       ) : projects.length === 0 ? (
         <div className="text-center py-12">
