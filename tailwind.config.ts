@@ -109,9 +109,9 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.6s ease-out forwards",
-        "fade-in-up": "fade-in-up 0.8s ease-out forwards",
-        "scale-in": "scale-in 0.5s ease-out forwards",
+        "fade-in": "fade-in 0.6s ease-out both",
+        "fade-in-up": "fade-in-up 0.8s ease-out both",
+        "scale-in": "scale-in 0.5s ease-out both",
         float: "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         "gradient-x": "gradient-x 3s ease infinite",
