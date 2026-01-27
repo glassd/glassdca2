@@ -104,7 +104,7 @@ export default function BlogGrid() {
             {Array.from({ length: 3 }).map((_, index) => (
               <article
                 key={index}
-                className="relative overflow-hidden rounded-2xl bg-card border border-border animate-fade-in-up opacity-0"
+                className="relative overflow-hidden rounded-2xl bg-card border border-border animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.15}s` }}
               >
                 <div className="h-48 bg-muted/40" />
@@ -172,7 +172,7 @@ export default function BlogGrid() {
                 <Link
                   key={post._id}
                   to={`/blog/${post.slug}`}
-                  className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/30 transition-all duration-300 animate-fade-in-up opacity-0"
+                  className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/30 transition-all duration-300 animate-fade-in-up"
                   style={{ animationDelay: `${index * 0.15}s` }}
                 >
                   {/* Image */}
