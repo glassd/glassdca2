@@ -120,22 +120,46 @@ export default function Blog() {
     }
   };
 
-  // Reset and load when filters/search change
+  // Load posts when filters/search change (including initial mount)
   useEffect(() => {
-    // Reset
-    setPosts([]);
-    setNextOffset(0);
-    setHasMore(true);
-    setInitialLoading(true);
-  }, [debouncedQ, selectedTags]);
+    let cancelled = false;
 
-  // When nextOffset resets to 0 (due to filter/search change), trigger initial load
-  useEffect(() => {
-    if (nextOffset === 0 && hasMore && initialLoading) {
-      loadMore();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextOffset, hasMore, initialLoading, queryString]);
+    const fetchPosts = async () => {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      params.set("offset", "0");
+      params.set("limit", String(PAGE_SIZE));
+      if (debouncedQ) params.set("q", debouncedQ);
+      if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
+
+      try {
+        const res = await fetch(`/api/blog?${params.toString()}`);
+        if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
+        const data: BlogResponse = await res.json();
+        if (cancelled) return;
+        setPosts(data.posts);
+        setNextOffset(data.nextOffset);
+        setHasMore(data.hasMore);
+      } catch (e: any) {
+        if (cancelled) return;
+        const msg = e?.message || "Unknown error";
+        console.error("[Blog] Error fetching posts:", msg);
+        setError(msg);
+      } finally {
+        if (cancelled) return;
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    };
+
+    fetchPosts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQ, selectedTags]);
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {
