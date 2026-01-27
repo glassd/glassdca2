@@ -1,17 +1,20 @@
 import { createClient } from "@sanity/client";
-import imageUrlBuilder from "@sanity/image-url";
+import { createImageUrlBuilder } from "@sanity/image-url";
 import type { SanityImageSource } from "@sanity/image-url";
+
 const isServer = typeof window === "undefined";
+const projectId = import.meta.env.VITE_SANITY_PROJECT_ID;
+const dataset = import.meta.env.VITE_SANITY_DATASET || "production";
 
 export const client = createClient({
-  projectId: "anguo7xv",
-  dataset: "production",
-  useCdn: true, // Always use CDN for faster responses
+  projectId,
+  dataset,
+  useCdn: !isServer,
   apiVersion: "2025-11-30",
-  // Token not needed when using CDN for published content
+  token: isServer ? process.env.SANITY_READ_TOKEN : undefined,
 });
 
-const builder = imageUrlBuilder(client);
+const builder = createImageUrlBuilder({ projectId, dataset });
 
 export function urlFor(source: SanityImageSource) {
   return builder.image(source);
