@@ -1,11 +1,11 @@
-import { useLoaderData, useLocation } from "react-router";
+import { Suspense, useMemo, useState } from "react";
+import { useLoaderData, useLocation, Await } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import { useMemo, useState } from "react";
 import TagChips from "../components/TagChips";
 
 type Tag = {
@@ -33,8 +33,8 @@ type RelatedPost = {
 
 type LoaderData = {
   post: Post;
-  allTags: Tag[];
-  relatedPosts: RelatedPost[];
+  allTags: Promise<Tag[]>;
+  relatedPosts: Promise<RelatedPost[]>;
 };
 
 function formatDate(iso?: string | null) {
@@ -71,46 +71,34 @@ export async function loader({ params }: Route.LoaderArgs) {
 
   const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
 
-  const [post, allTags] = await Promise.all([
-    client.fetch<Post | null>(postQuery, { slug }),
-    client.fetch<Tag[]>(tagsQuery),
-  ]);
+  const relatedQuery = `*[
+    _type == "post" &&
+    defined(publishedAt) &&
+    slug.current != $slug &&
+    count(tags[@->slug.current in
+      *[_type == "post" && slug.current == $slug][0].tags[]->slug.current
+    ]) > 0
+  ] | order(publishedAt desc) [0...5] {
+    _id,
+    title,
+    "slug": slug.current
+  }`;
+
+  // Await post (needed for meta tags), defer the rest
+  const post = await client.fetch<Post | null>(postQuery, { slug });
 
   if (!post) {
     throw new Response("Post not found", { status: 404 });
   }
 
-  // Fetch related posts based on current post's tags
-  let relatedPosts: RelatedPost[] = [];
-  if (post.tags && post.tags.length > 0) {
-    const tagSlugs = post.tags.map((t) => t.slug);
-    const relatedQuery = `*[
-      _type == "post" &&
-      defined(publishedAt) &&
-      slug.current != $currentSlug &&
-      count(tags[@->slug.current in $tagSlugs]) > 0
-    ] | order(publishedAt desc) [0...5] {
-      _id,
-      title,
-      "slug": slug.current
-    }`;
+  const allTags = client.fetch<Tag[]>(tagsQuery);
+  const relatedPosts = client.fetch<RelatedPost[]>(relatedQuery, { slug });
 
-    relatedPosts = await client.fetch<RelatedPost[]>(relatedQuery, {
-      currentSlug: slug,
-      tagSlugs,
-    });
-  }
-
-  return Response.json(
-    { post, allTags, relatedPosts } satisfies LoaderData,
-    {
-      headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
-    }
-  );
+  return { post, allTags, relatedPosts };
 }
 
 export function meta({ data }: Route.MetaArgs) {
-  const loaderData = data as LoaderData | undefined;
+  const loaderData = data as { post: Post } | undefined;
   const post = loaderData?.post;
   const title = post?.title ? `${post.title} · Blog` : "Blog Post";
   const description = (post?.excerpt || "").trim() || "Read this blog post.";
@@ -163,6 +151,46 @@ export function meta({ data }: Route.MetaArgs) {
   return meta;
 }
 
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+function extractText(node: any): string {
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (typeof node === "string") return node;
+  if (node && typeof node === "object" && "props" in node) {
+    return extractText((node as any).props?.children);
+  }
+  return "";
+}
+
+type TocItem = { id: string; text: string; level: number };
+
+function SidebarSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-4 bg-muted rounded w-1/3" />
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-6 bg-muted rounded-full w-16" />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 bg-muted rounded w-1/3" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-4 bg-muted rounded w-3/4" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function BlogPostRoute() {
   const { post, allTags, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
   const prettyDate = formatDate(post.publishedAt);
@@ -203,23 +231,6 @@ export default function BlogPostRoute() {
     return s ? `?${s}` : "";
   }, [q, selectedTags]);
 
-  function slugify(text: string) {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-");
-  }
-  function extractText(node: any): string {
-    if (Array.isArray(node)) return node.map(extractText).join("");
-    if (typeof node === "string") return node;
-    if (node && typeof node === "object" && "props" in node) {
-      return extractText((node as any).props?.children);
-    }
-    return "";
-  }
-
-  type TocItem = { id: string; text: string; level: number };
   const toc: TocItem[] = useMemo(() => {
     const items: TocItem[] = [];
     const md = post.bodyMarkdown || "";
@@ -444,24 +455,30 @@ export default function BlogPostRoute() {
               </a>
             </div>
 
-            <div>
-              <TagChips
-                tags={allTags}
-                selected={selectedTags}
-                onToggle={(slug) =>
-                  setSelectedTags((prev) =>
-                    prev.includes(slug)
-                      ? prev.filter((s) => s !== slug)
-                      : [...prev, slug]
-                  )
-                }
-                onClear={() => {
-                  setSelectedTags([]);
-                  setQ("");
-                }}
-                label="Filter by tags"
-              />
-            </div>
+            <Suspense fallback={<SidebarSkeleton />}>
+              <Await resolve={allTags}>
+                {(resolvedTags) => (
+                  <div>
+                    <TagChips
+                      tags={resolvedTags}
+                      selected={selectedTags}
+                      onToggle={(slug) =>
+                        setSelectedTags((prev) =>
+                          prev.includes(slug)
+                            ? prev.filter((s) => s !== slug)
+                            : [...prev, slug]
+                        )
+                      }
+                      onClear={() => {
+                        setSelectedTags([]);
+                        setQ("");
+                      }}
+                      label="Filter by tags"
+                    />
+                  </div>
+                )}
+              </Await>
+            </Suspense>
 
             {toc.length > 0 && (
               <div>
@@ -488,25 +505,38 @@ export default function BlogPostRoute() {
               </div>
             )}
 
-            {relatedPosts.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-sm font-semibold text-foreground">
-                  Read next
-                </h2>
-                <ul className="space-y-2">
-                  {relatedPosts.map((p) => (
-                    <li key={p._id}>
-                      <a
-                        href={`/blog/${p.slug}${linkSuffix}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {p.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+            <Suspense fallback={
+              <div className="space-y-2 animate-pulse">
+                <div className="h-4 bg-muted rounded w-1/3" />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-4 bg-muted rounded w-3/4" />
+                ))}
               </div>
-            )}
+            }>
+              <Await resolve={relatedPosts}>
+                {(resolvedRelated) =>
+                  resolvedRelated.length > 0 ? (
+                    <div>
+                      <h2 className="mb-2 text-sm font-semibold text-foreground">
+                        Read next
+                      </h2>
+                      <ul className="space-y-2">
+                        {resolvedRelated.map((p) => (
+                          <li key={p._id}>
+                            <a
+                              href={`/blog/${p.slug}${linkSuffix}`}
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {p.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null
+                }
+              </Await>
+            </Suspense>
           </div>
         </aside>
       </div>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLoaderData, useSearchParams } from "react-router";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useLoaderData, useSearchParams, Await } from "react-router";
 import type { Route } from "./+types/blog";
 import BlogCard from "../components/BlogCard";
 import TagChips from "../components/TagChips";
@@ -29,14 +29,12 @@ type Post = {
   publishedAt?: string | null;
 };
 
-type LoaderData = {
+type InitialData = {
   posts: Post[];
   tags: Tag[];
   total: number;
   hasMore: boolean;
   nextOffset: number;
-  initialQ: string;
-  initialTags: string[];
 };
 
 const PAGE_SIZE = 10;
@@ -49,7 +47,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // Build GROQ filter conditions and params
   const filters: string[] = ['_type == "post"', "defined(publishedAt)"];
   const params: Record<string, any> = {};
 
@@ -80,80 +77,86 @@ export async function loader({ request }: Route.LoaderArgs) {
   const countQuery = `count(*[${where}])`;
   const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
 
-  const [rawPosts, total, tags] = await Promise.all([
+  const initial = Promise.all([
     client.fetch<any[]>(listQuery, params),
     client.fetch<number>(countQuery, params),
     client.fetch<Tag[]>(tagsQuery),
-  ]);
+  ]).then(([rawPosts, total, tags]) => {
+    const posts: Post[] = rawPosts.map((p) => {
+      const base =
+        typeof p.excerpt === "string" && p.excerpt.trim().length > 0
+          ? p.excerpt.trim()
+          : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
+      const snippet = truncateAtWord(base, 200, "…");
+      return {
+        _id: p._id,
+        title: p.title,
+        slug: p.slug,
+        mainImage: p.mainImage,
+        publishedAt: p.publishedAt,
+        tags: p.tags,
+        snippet,
+      };
+    });
 
-  // Compute snippet on the server
-  const posts: Post[] = rawPosts.map((p) => {
-    const base =
-      typeof p.excerpt === "string" && p.excerpt.trim().length > 0
-        ? p.excerpt.trim()
-        : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
-    const snippet = truncateAtWord(base, 200, "…");
-    return {
-      _id: p._id,
-      title: p.title,
-      slug: p.slug,
-      mainImage: p.mainImage,
-      publishedAt: p.publishedAt,
-      tags: p.tags,
-      snippet,
-    };
+    const nextOffset = posts.length;
+    const hasMore = nextOffset < total;
+
+    return { posts, tags, total, hasMore, nextOffset } satisfies InitialData;
   });
 
-  const nextOffset = posts.length;
-  const hasMore = nextOffset < total;
+  return {
+    initial,
+    initialQ: qRaw,
+    initialTags: tagSlugs,
+  };
+}
 
-  return Response.json(
-    {
-      posts,
-      tags,
-      total,
-      hasMore,
-      nextOffset,
-      initialQ: qRaw,
-      initialTags: tagSlugs,
-    } satisfies LoaderData,
-    {
-      headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-      },
-    }
+function BlogContentSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-8">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse"
+        >
+          <div className="h-48 bg-muted" />
+          <div className="p-6 space-y-3">
+            <div className="h-4 bg-muted rounded w-1/3" />
+            <div className="h-6 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-full" />
+            <div className="h-4 bg-muted rounded w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
-export default function Blog() {
-  const loaderData = useLoaderData<typeof loader>() as LoaderData;
+function BlogContent({ data }: { data: InitialData & { initialQ: string; initialTags: string[] } }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize state from loader data
-  const [posts, setPosts] = useState<Post[]>(loaderData.posts);
-  const [nextOffset, setNextOffset] = useState(loaderData.nextOffset);
-  const [hasMore, setHasMore] = useState(loaderData.hasMore);
+  const [posts, setPosts] = useState<Post[]>(data.posts);
+  const [nextOffset, setNextOffset] = useState(data.nextOffset);
+  const [hasMore, setHasMore] = useState(data.hasMore);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [availableTags] = useState<Tag[]>(loaderData.tags);
-  const [selectedTags, setSelectedTags] = useState<string[]>(loaderData.initialTags);
-  const [q, setQ] = useState(loaderData.initialQ);
-  const [debouncedQ, setDebouncedQ] = useState(loaderData.initialQ);
+  const [availableTags] = useState<Tag[]>(data.tags);
+  const [selectedTags, setSelectedTags] = useState<string[]>(data.initialTags);
+  const [q, setQ] = useState(data.initialQ);
+  const [debouncedQ, setDebouncedQ] = useState(data.initialQ);
 
-  // Track if filters have changed from initial load (to trigger client fetch)
   const [filtersChanged, setFiltersChanged] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Debounce search input
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedQ(q.trim()), 350);
     return () => clearTimeout(handle);
   }, [q]);
 
-  // Build query string for API
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     params.set("offset", String(nextOffset));
@@ -163,7 +166,6 @@ export default function Blog() {
     return params.toString();
   }, [nextOffset, debouncedQ, selectedTags]);
 
-  // Preserve current filters/search in post links
   const linkSuffix = useMemo(() => {
     const p = new URLSearchParams();
     if (debouncedQ) p.set("q", debouncedQ);
@@ -172,7 +174,6 @@ export default function Blog() {
     return s ? `?${s}` : "";
   }, [debouncedQ, selectedTags]);
 
-  // Load more posts (for infinite scroll)
   const loadMore = async () => {
     if (loading || !hasMore) return;
     setLoading(true);
@@ -180,10 +181,10 @@ export default function Blog() {
     try {
       const res = await fetch(`/api/blog?${queryString}`);
       if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
-      const data = await res.json();
-      setPosts((prev) => [...prev, ...data.posts]);
-      setNextOffset(data.nextOffset);
-      setHasMore(data.hasMore);
+      const fetchedData = await res.json();
+      setPosts((prev) => [...prev, ...fetchedData.posts]);
+      setNextOffset(fetchedData.nextOffset);
+      setHasMore(fetchedData.hasMore);
     } catch (e: any) {
       const msg = e?.message || "Unknown error";
       console.error("[Blog] Error fetching posts:", msg);
@@ -193,15 +194,12 @@ export default function Blog() {
     }
   };
 
-  // Client-side fetch when filters/search change
   useEffect(() => {
-    // Skip initial render - data already loaded via SSR
     if (!filtersChanged) {
-      // Check if current filters differ from initial
-      const qChanged = debouncedQ !== loaderData.initialQ;
+      const qChanged = debouncedQ !== data.initialQ;
       const tagsChanged =
-        selectedTags.length !== loaderData.initialTags.length ||
-        selectedTags.some((t, i) => t !== loaderData.initialTags[i]);
+        selectedTags.length !== data.initialTags.length ||
+        selectedTags.some((t, i) => t !== data.initialTags[i]);
 
       if (qChanged || tagsChanged) {
         setFiltersChanged(true);
@@ -225,11 +223,11 @@ export default function Blog() {
       try {
         const res = await fetch(`/api/blog?${params.toString()}`);
         if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
-        const data = await res.json();
+        const fetchedData = await res.json();
         if (cancelled) return;
-        setPosts(data.posts);
-        setNextOffset(data.nextOffset);
-        setHasMore(data.hasMore);
+        setPosts(fetchedData.posts);
+        setNextOffset(fetchedData.nextOffset);
+        setHasMore(fetchedData.hasMore);
       } catch (e: any) {
         if (cancelled) return;
         const msg = e?.message || "Unknown error";
@@ -243,7 +241,6 @@ export default function Blog() {
 
     fetchPosts();
 
-    // Update URL search params for shareable URLs
     const newParams = new URLSearchParams();
     if (debouncedQ) newParams.set("q", debouncedQ);
     if (selectedTags.length > 0) newParams.set("tags", selectedTags.join(","));
@@ -252,9 +249,8 @@ export default function Blog() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQ, selectedTags, filtersChanged, loaderData.initialQ, loaderData.initialTags, setSearchParams]);
+  }, [debouncedQ, selectedTags, filtersChanged, data.initialQ, data.initialTags, setSearchParams]);
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!sentinelRef.current) return;
     if (observerRef.current) {
@@ -287,83 +283,114 @@ export default function Blog() {
   };
 
   return (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="lg:col-span-3">
+        {posts.length === 0 && !loading ? (
+          <div className="text-muted-foreground">No posts found.</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-8">
+            {posts.map((p) => (
+              <BlogCard
+                key={p._id}
+                title={p.title}
+                slug={`${p.slug}${linkSuffix}`}
+                mainImage={p.mainImage}
+                tags={p.tags || []}
+                snippet={p.snippet}
+                publishedAt={p.publishedAt}
+              />
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 text-sm text-destructive">
+            Error loading posts: {error}
+          </div>
+        )}
+
+        <div ref={sentinelRef} className="h-10" />
+
+        {loading && posts.length > 0 && (
+          <div className="mt-4 text-muted-foreground">Loading more...</div>
+        )}
+      </div>
+
+      <aside className="lg:col-span-1">
+        <div className="sticky top-24 space-y-6">
+          <div>
+            <label htmlFor="blog-search" className="sr-only">
+              Search posts
+            </label>
+            <input
+              id="blog-search"
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search posts..."
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          {availableTags.length > 0 && (
+            <TagChips
+              tags={availableTags}
+              selected={selectedTags}
+              onToggle={toggleTag}
+              onClear={clearFilters}
+              label="Filter by tags"
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="inline-flex items-center rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+          >
+            Clear filters
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+export default function Blog() {
+  const { initial, initialQ, initialTags } = useLoaderData<typeof loader>();
+
+  return (
     <div className="container mx-auto max-w-7xl px-4 py-24">
       <h1 className="text-4xl font-bold text-foreground mb-6">Blog</h1>
 
-      {/* Layout: main content + right sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3">
-          {/* Content */}
-          {posts.length === 0 && !loading ? (
-            <div className="text-muted-foreground">No posts found.</div>
-          ) : (
-            <div className="grid grid-cols-1 gap-8">
-              {posts.map((p) => (
-                <BlogCard
-                  key={p._id}
-                  title={p.title}
-                  slug={`${p.slug}${linkSuffix}`}
-                  mainImage={p.mainImage}
-                  tags={p.tags || []}
-                  snippet={p.snippet}
-                  publishedAt={p.publishedAt}
-                />
-              ))}
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 text-sm text-destructive">
-              Error loading posts: {error}
-            </div>
-          )}
-
-          {/* Sentinel for infinite scroll */}
-          <div ref={sentinelRef} className="h-10" />
-
-          {/* Loading indicator at bottom */}
-          {loading && posts.length > 0 && (
-            <div className="mt-4 text-muted-foreground">Loading more...</div>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <aside className="lg:col-span-1">
-          <div className="sticky top-24 space-y-6">
-            <div>
-              <label htmlFor="blog-search" className="sr-only">
-                Search posts
-              </label>
-              <input
-                id="blog-search"
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search posts..."
-                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            {availableTags.length > 0 && (
-              <TagChips
-                tags={availableTags}
-                selected={selectedTags}
-                onToggle={toggleTag}
-                onClear={clearFilters}
-                label="Filter by tags"
-              />
-            )}
-
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="inline-flex items-center rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
-            >
-              Clear filters
-            </button>
+      <Suspense fallback={
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
+            <BlogContentSkeleton />
           </div>
-        </aside>
-      </div>
+          <aside className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              <div>
+                <label htmlFor="blog-search" className="sr-only">
+                  Search posts
+                </label>
+                <input
+                  id="blog-search"
+                  type="text"
+                  placeholder="Search posts..."
+                  className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  disabled
+                />
+              </div>
+            </div>
+          </aside>
+        </div>
+      }>
+        <Await resolve={initial}>
+          {(resolved) => (
+            <BlogContent data={{ ...resolved, initialQ, initialTags }} />
+          )}
+        </Await>
+      </Suspense>
     </div>
   );
 }
