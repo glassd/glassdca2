@@ -1,6 +1,6 @@
 import { Mail } from "lucide-react";
 import ClientIcon from "@/components/ClientIcon";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import logo from "@/assets/logo.svg";
 
 export default function Footer() {

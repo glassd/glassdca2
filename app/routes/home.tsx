@@ -66,41 +66,6 @@ export async function loader({}: Route.LoaderArgs) {
   return { posts };
 }
 
-function BlogGridSkeleton() {
-  return (
-    <section className="py-24 bg-secondary">
-      <div className="container px-6">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-          <div>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Latest Posts
-            </h2>
-            <p className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              From the Blog
-            </p>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse"
-            >
-              <div className="h-48 bg-muted" />
-              <div className="p-6 space-y-3">
-                <div className="h-4 bg-muted rounded w-1/3" />
-                <div className="h-6 bg-muted rounded w-3/4" />
-                <div className="h-4 bg-muted rounded w-full" />
-                <div className="h-4 bg-muted rounded w-2/3" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function Home() {
   const { posts } = useLoaderData<typeof loader>();
 

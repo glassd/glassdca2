@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { useLoaderData, Await } from "react-router";
+import { useLoaderData } from "react-router";
 import type { Route } from "./+types/projects";
 import { client, urlFor } from "../lib/sanity";
 import { ProjectCard } from "../components/ProjectCard";
@@ -33,32 +32,9 @@ export async function loader({}: Route.LoaderArgs) {
     publishedAt
   }`;
 
-  const projects = client.fetch<Project[]>(query);
+  const projects = await client.fetch<Project[]>(query);
 
   return { projects };
-}
-
-function SkeletonCard() {
-  return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse">
-      <div className="h-48 bg-muted" />
-      <div className="p-6 space-y-3">
-        <div className="h-6 bg-muted rounded w-3/4" />
-        <div className="h-4 bg-muted rounded w-full" />
-        <div className="h-4 bg-muted rounded w-2/3" />
-      </div>
-    </div>
-  );
-}
-
-function SkeletonGrid() {
-  return (
-    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <SkeletonCard key={i} />
-      ))}
-    </div>
-  );
 }
 
 function ProjectList({ projects }: { projects: Project[] }) {
@@ -101,11 +77,7 @@ export default function Projects() {
         My Projects
       </h1>
 
-      <Suspense fallback={<SkeletonGrid />}>
-        <Await resolve={projects}>
-          {(resolved) => <ProjectList projects={resolved} />}
-        </Await>
-      </Suspense>
+      <ProjectList projects={projects} />
     </div>
   );
 }
