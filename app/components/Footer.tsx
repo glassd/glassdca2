@@ -1,5 +1,5 @@
-import { Github, Twitter, Linkedin, Mail } from "lucide-react";
-import { Icon } from "@iconify/react";
+import { Mail } from "lucide-react";
+import ClientIcon from "@/components/ClientIcon";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.svg";
 
@@ -27,19 +27,19 @@ export default function Footer() {
               href="https://github.com/glassd"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Icon icon="line-md:github" className="h-5 w-5" />
+              <ClientIcon icon="line-md:github" className="h-5 w-5" />
             </a>
             <a
               href="https://x.com/daglassd"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Icon icon="ri:twitter-line" className="h-5 w-5" />
+              <ClientIcon icon="ri:twitter-line" className="h-5 w-5" />
             </a>
             <a
               href="https://www.linkedin.com/feed/"
               className="p-3 rounded-xl bg-secondary hover:bg-primary hover:text-primary-foreground text-muted-foreground transition-all"
             >
-              <Icon icon="line-md:linkedin" className="h-5 w-5" />
+              <ClientIcon icon="line-md:linkedin" className="h-5 w-5" />
             </a>
             <Link
               to="/contact"

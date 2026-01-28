@@ -1,15 +1,4 @@
-import {
-  Code2,
-  Cuboid,
-  Cloud,
-  Database,
-  Braces,
-  Atom,
-  Server,
-  Palette,
-} from "lucide-react";
-
-import { Icon } from "@iconify/react";
+import ClientIcon from "@/components/ClientIcon";
 
 const technologies = [
   { name: "React", Icon: "simple-icons:react" },
@@ -44,7 +33,7 @@ export default function TechStack() {
             >
               <div className="text-center">
                 <div className="mb-3 flex justify-center group-hover:scale-110 transition-transform">
-                  <Icon
+                  <ClientIcon
                     icon={tech.Icon}
                     className="h-9 w-9 text-foreground/80 group-hover:text-foreground"
                   />

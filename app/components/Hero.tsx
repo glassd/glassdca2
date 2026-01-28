@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { Icon } from "@iconify/react";
+import ClientIcon from "@/components/ClientIcon";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router";
 
@@ -82,19 +82,19 @@ export default function Hero() {
               href="https://github.com/glassd"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Icon icon="line-md:github" className="h-5 w-5" />
+              <ClientIcon icon="line-md:github" className="h-5 w-5" />
             </a>
             <a
               href="https://x.com/daglassd"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Icon icon="ri:twitter-line" className="h-5 w-5" />
+              <ClientIcon icon="ri:twitter-line" className="h-5 w-5" />
             </a>
             <a
               href="https://www.linkedin.com/in/glassd/"
               className="p-3 rounded-full bg-primary-foreground/5 border border-primary-foreground/10 text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground/20 transition-all"
             >
-              <Icon icon="line-md:linkedin" className="h-5 w-5" />
+              <ClientIcon icon="line-md:linkedin" className="h-5 w-5" />
             </a>
           </div>
         </div>
