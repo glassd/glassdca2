@@ -5,8 +5,9 @@ import { urlFor } from "../lib/sanity";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import TagChips from "../components/TagChips";
+
 type Tag = {
   _id: string;
   title: string;
@@ -22,6 +23,18 @@ type Post = {
   tags?: Tag[];
   bodyMarkdown?: string | null;
   excerpt?: string | null;
+};
+
+type RelatedPost = {
+  _id: string;
+  title: string;
+  slug: string;
+};
+
+type LoaderData = {
+  post: Post;
+  allTags: Tag[];
+  relatedPosts: RelatedPost[];
 };
 
 function formatDate(iso?: string | null) {
@@ -45,7 +58,7 @@ export async function loader({ params }: Route.LoaderArgs) {
     throw new Response("Missing slug", { status: 400 });
   }
 
-  const query = `*[_type == "post" && slug.current == $slug][0]{
+  const postQuery = `*[_type == "post" && slug.current == $slug][0]{
     _id,
     title,
     "slug": slug.current,
@@ -56,22 +69,52 @@ export async function loader({ params }: Route.LoaderArgs) {
     excerpt
   }`;
 
-  const post = await client.fetch<Post | null>(query, { slug });
+  const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
+
+  const [post, allTags] = await Promise.all([
+    client.fetch<Post | null>(postQuery, { slug }),
+    client.fetch<Tag[]>(tagsQuery),
+  ]);
+
   if (!post) {
     throw new Response("Post not found", { status: 404 });
   }
 
-  return Response.json(post, {
-    headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
-  });
+  // Fetch related posts based on current post's tags
+  let relatedPosts: RelatedPost[] = [];
+  if (post.tags && post.tags.length > 0) {
+    const tagSlugs = post.tags.map((t) => t.slug);
+    const relatedQuery = `*[
+      _type == "post" &&
+      defined(publishedAt) &&
+      slug.current != $currentSlug &&
+      count(tags[@->slug.current in $tagSlugs]) > 0
+    ] | order(publishedAt desc) [0...5] {
+      _id,
+      title,
+      "slug": slug.current
+    }`;
+
+    relatedPosts = await client.fetch<RelatedPost[]>(relatedQuery, {
+      currentSlug: slug,
+      tagSlugs,
+    });
+  }
+
+  return Response.json(
+    { post, allTags, relatedPosts } satisfies LoaderData,
+    {
+      headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=60" },
+    }
+  );
 }
 
 export function meta({ data }: Route.MetaArgs) {
-  const post = data as Post | undefined;
+  const loaderData = data as LoaderData | undefined;
+  const post = loaderData?.post;
   const title = post?.title ? `${post.title} · Blog` : "Blog Post";
   const description = (post?.excerpt || "").trim() || "Read this blog post.";
 
-  // Build absolute canonical and image URLs when PUBLIC_SITE_URL is provided
   const path = post?.slug ? `/blog/${post.slug}` : "/blog";
   const site =
     (typeof process !== "undefined" &&
@@ -89,14 +132,11 @@ export function meta({ data }: Route.MetaArgs) {
   const meta: any[] = [
     { title },
     { name: "description", content: description },
-    // Canonical
     { tagName: "link", rel: "canonical", href: canonical },
-    // Open Graph
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:type", content: "article" },
     { property: "og:url", content: canonical },
-    // Twitter
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
@@ -124,7 +164,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export default function BlogPostRoute() {
-  const post: Post = useLoaderData<typeof loader>();
+  const { post, allTags, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
   const prettyDate = formatDate(post.publishedAt);
 
   const hero = useMemo(() => {
@@ -136,35 +176,16 @@ export default function BlogPostRoute() {
     }
   }, [post.mainImage]);
 
-  // Helpers for heading anchors and query param handling
   const location = useLocation();
   const initialParams = useMemo(
     () => new URLSearchParams(location.search),
-    [location.search],
+    [location.search]
   );
 
   const [q, setQ] = useState<string>(initialParams.get("q") || "");
   const [selectedTags, setSelectedTags] = useState<string[]>(
-    (initialParams.get("tags") || "").split(",").filter(Boolean),
+    (initialParams.get("tags") || "").split(",").filter(Boolean)
   );
-
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/blog/tags`, {
-          headers: { "Cache-Control": "no-store" },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setAvailableTags(data || []);
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const backLink = useMemo(() => {
     const p = new URLSearchParams();
@@ -213,31 +234,6 @@ export default function BlogPostRoute() {
     }
     return items;
   }, [post.bodyMarkdown]);
-
-  const [readNext, setReadNext] = useState<Post[]>([]);
-  useEffect(() => {
-    const tagsForNext =
-      selectedTags.length > 0
-        ? selectedTags
-        : (post.tags || []).map((t) => t.slug);
-    const params = new URLSearchParams();
-    params.set("offset", "0");
-    params.set("limit", "5");
-    if (tagsForNext.length) params.set("tags", tagsForNext.join(","));
-    (async () => {
-      try {
-        const res = await fetch(`/api/blog?${params.toString()}`, {
-          headers: { "Cache-Control": "no-store" },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const list: Post[] = (data?.posts || []).filter(
-          (p: Post) => p.slug !== post.slug,
-        );
-        setReadNext(list);
-      } catch {}
-    })();
-  }, [post.slug, post.tags, selectedTags]);
 
   const mdComponents = useMemo(
     () => ({
@@ -315,8 +311,6 @@ export default function BlogPostRoute() {
         );
       },
       img: (props: any) => (
-        // Images embedded via the Markdown plugin will often be Sanity CDN URLs
-        // We just give them nice defaults.
         <img
           {...props}
           loading="lazy"
@@ -351,7 +345,7 @@ export default function BlogPostRoute() {
         />
       ),
     }),
-    [],
+    []
   );
 
   return (
@@ -452,13 +446,13 @@ export default function BlogPostRoute() {
 
             <div>
               <TagChips
-                tags={availableTags}
+                tags={allTags}
                 selected={selectedTags}
                 onToggle={(slug) =>
                   setSelectedTags((prev) =>
                     prev.includes(slug)
                       ? prev.filter((s) => s !== slug)
-                      : [...prev, slug],
+                      : [...prev, slug]
                   )
                 }
                 onClear={() => {
@@ -494,13 +488,13 @@ export default function BlogPostRoute() {
               </div>
             )}
 
-            {readNext.length > 0 && (
+            {relatedPosts.length > 0 && (
               <div>
                 <h2 className="mb-2 text-sm font-semibold text-foreground">
                   Read next
                 </h2>
                 <ul className="space-y-2">
-                  {readNext.map((p) => (
+                  {relatedPosts.map((p) => (
                     <li key={p._id}>
                       <a
                         href={`/blog/${p.slug}${linkSuffix}`}

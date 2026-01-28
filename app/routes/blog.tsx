@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import BlogCard from "../components/BlogCard";
 import TagChips from "../components/TagChips";
-import SkeletonCard from "../components/SkeletonCard";
+import { client } from "../lib/sanity";
+import { stripMarkdown, truncateAtWord } from "../lib/utils";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -27,27 +29,120 @@ type Post = {
   publishedAt?: string | null;
 };
 
-type BlogResponse = {
+type LoaderData = {
   posts: Post[];
-  nextOffset: number;
-  hasMore: boolean;
+  tags: Tag[];
   total: number;
+  hasMore: boolean;
+  nextOffset: number;
+  initialQ: string;
+  initialTags: string[];
 };
 
 const PAGE_SIZE = 10;
 
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const qRaw = (url.searchParams.get("q") || "").trim();
+  const tagSlugs = (url.searchParams.get("tags") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // Build GROQ filter conditions and params
+  const filters: string[] = ['_type == "post"', "defined(publishedAt)"];
+  const params: Record<string, any> = {};
+
+  if (qRaw) {
+    params.q = `*${qRaw}*`;
+    filters.push("(title match $q || bodyMarkdown match $q)");
+  }
+
+  if (tagSlugs.length > 0) {
+    params.tagSlugs = tagSlugs;
+    filters.push("count(tags[@->slug.current in $tagSlugs]) > 0");
+  }
+
+  const where = filters.join(" && ");
+
+  const projection = `{
+    _id,
+    title,
+    "slug": slug.current,
+    mainImage,
+    publishedAt,
+    "tags": tags[]->{ _id, title, "slug": slug.current },
+    bodyMarkdown,
+    excerpt
+  }`;
+
+  const listQuery = `*[${where}] | order(publishedAt desc, _id desc) [0...${PAGE_SIZE}] ${projection}`;
+  const countQuery = `count(*[${where}])`;
+  const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
+
+  const [rawPosts, total, tags] = await Promise.all([
+    client.fetch<any[]>(listQuery, params),
+    client.fetch<number>(countQuery, params),
+    client.fetch<Tag[]>(tagsQuery),
+  ]);
+
+  // Compute snippet on the server
+  const posts: Post[] = rawPosts.map((p) => {
+    const base =
+      typeof p.excerpt === "string" && p.excerpt.trim().length > 0
+        ? p.excerpt.trim()
+        : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
+    const snippet = truncateAtWord(base, 200, "…");
+    return {
+      _id: p._id,
+      title: p.title,
+      slug: p.slug,
+      mainImage: p.mainImage,
+      publishedAt: p.publishedAt,
+      tags: p.tags,
+      snippet,
+    };
+  });
+
+  const nextOffset = posts.length;
+  const hasMore = nextOffset < total;
+
+  return Response.json(
+    {
+      posts,
+      tags,
+      total,
+      hasMore,
+      nextOffset,
+      initialQ: qRaw,
+      initialTags: tagSlugs,
+    } satisfies LoaderData,
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    }
+  );
+}
+
 export default function Blog() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [nextOffset, setNextOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const loaderData = useLoaderData<typeof loader>() as LoaderData;
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialize state from loader data
+  const [posts, setPosts] = useState<Post[]>(loaderData.posts);
+  const [nextOffset, setNextOffset] = useState(loaderData.nextOffset);
+  const [hasMore, setHasMore] = useState(loaderData.hasMore);
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
+  const [availableTags] = useState<Tag[]>(loaderData.tags);
+  const [selectedTags, setSelectedTags] = useState<string[]>(loaderData.initialTags);
+  const [q, setQ] = useState(loaderData.initialQ);
+  const [debouncedQ, setDebouncedQ] = useState(loaderData.initialQ);
+
+  // Track if filters have changed from initial load (to trigger client fetch)
+  const [filtersChanged, setFiltersChanged] = useState(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -57,25 +152,6 @@ export default function Blog() {
     const handle = setTimeout(() => setDebouncedQ(q.trim()), 350);
     return () => clearTimeout(handle);
   }, [q]);
-
-  // Load tags initially
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await fetch(`/api/blog/tags`);
-        if (!res.ok) throw new Error(`Failed to load tags (${res.status})`);
-        const data: Tag[] = await res.json();
-        if (!cancelled) setAvailableTags(data);
-      } catch (e: any) {
-        console.error("[Blog] Failed to load tags:", e?.message || e);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Build query string for API
   const queryString = useMemo(() => {
@@ -87,7 +163,7 @@ export default function Blog() {
     return params.toString();
   }, [nextOffset, debouncedQ, selectedTags]);
 
-  // Preserve current filters/search in post links so they carry to the detail view
+  // Preserve current filters/search in post links
   const linkSuffix = useMemo(() => {
     const p = new URLSearchParams();
     if (debouncedQ) p.set("q", debouncedQ);
@@ -96,7 +172,7 @@ export default function Blog() {
     return s ? `?${s}` : "";
   }, [debouncedQ, selectedTags]);
 
-  // Load a page of posts
+  // Load more posts (for infinite scroll)
   const loadMore = async () => {
     if (loading || !hasMore) return;
     setLoading(true);
@@ -104,10 +180,8 @@ export default function Blog() {
     try {
       const res = await fetch(`/api/blog?${queryString}`);
       if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
-      const data: BlogResponse = await res.json();
-      setPosts((prev) =>
-        nextOffset === 0 ? data.posts : [...prev, ...data.posts],
-      );
+      const data = await res.json();
+      setPosts((prev) => [...prev, ...data.posts]);
       setNextOffset(data.nextOffset);
       setHasMore(data.hasMore);
     } catch (e: any) {
@@ -116,12 +190,26 @@ export default function Blog() {
       setError(msg);
     } finally {
       setLoading(false);
-      setInitialLoading(false);
     }
   };
 
-  // Load posts when filters/search change (including initial mount)
+  // Client-side fetch when filters/search change
   useEffect(() => {
+    // Skip initial render - data already loaded via SSR
+    if (!filtersChanged) {
+      // Check if current filters differ from initial
+      const qChanged = debouncedQ !== loaderData.initialQ;
+      const tagsChanged =
+        selectedTags.length !== loaderData.initialTags.length ||
+        selectedTags.some((t, i) => t !== loaderData.initialTags[i]);
+
+      if (qChanged || tagsChanged) {
+        setFiltersChanged(true);
+      } else {
+        return;
+      }
+    }
+
     let cancelled = false;
 
     const fetchPosts = async () => {
@@ -137,7 +225,7 @@ export default function Blog() {
       try {
         const res = await fetch(`/api/blog?${params.toString()}`);
         if (!res.ok) throw new Error(`Failed to load posts (${res.status})`);
-        const data: BlogResponse = await res.json();
+        const data = await res.json();
         if (cancelled) return;
         setPosts(data.posts);
         setNextOffset(data.nextOffset);
@@ -150,21 +238,25 @@ export default function Blog() {
       } finally {
         if (cancelled) return;
         setLoading(false);
-        setInitialLoading(false);
       }
     };
 
     fetchPosts();
 
+    // Update URL search params for shareable URLs
+    const newParams = new URLSearchParams();
+    if (debouncedQ) newParams.set("q", debouncedQ);
+    if (selectedTags.length > 0) newParams.set("tags", selectedTags.join(","));
+    setSearchParams(newParams, { replace: true });
+
     return () => {
       cancelled = true;
     };
-  }, [debouncedQ, selectedTags]);
+  }, [debouncedQ, selectedTags, filtersChanged, loaderData.initialQ, loaderData.initialTags, setSearchParams]);
 
   // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!sentinelRef.current) return;
-    // Clean up any previous observer
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
@@ -174,7 +266,7 @@ export default function Blog() {
           loadMore();
         }
       },
-      { rootMargin: "200px 0px" },
+      { rootMargin: "200px 0px" }
     );
     observerRef.current.observe(sentinelRef.current);
     return () => {
@@ -185,7 +277,7 @@ export default function Blog() {
 
   const toggleTag = (slug: string) => {
     setSelectedTags((prev) =>
-      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
   };
 
@@ -196,24 +288,14 @@ export default function Blog() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-24">
-      <h1 className="text-4xl font-bold text-foreground mb-6">
-        Blog
-      </h1>
+      <h1 className="text-4xl font-bold text-foreground mb-6">Blog</h1>
 
       {/* Layout: main content + right sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-3">
           {/* Content */}
-          {initialLoading && posts.length === 0 ? (
-            <div className="grid grid-cols-1 gap-8">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-muted-foreground">
-              No posts found.
-            </div>
+          {posts.length === 0 && !loading ? (
+            <div className="text-muted-foreground">No posts found.</div>
           ) : (
             <div className="grid grid-cols-1 gap-8">
               {posts.map((p) => (
@@ -241,9 +323,7 @@ export default function Blog() {
 
           {/* Loading indicator at bottom */}
           {loading && posts.length > 0 && (
-            <div className="mt-4 text-muted-foreground">
-              Loading more...
-            </div>
+            <div className="mt-4 text-muted-foreground">Loading more...</div>
           )}
         </div>
 
