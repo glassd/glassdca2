@@ -1,5 +1,4 @@
-import { Suspense } from "react";
-import { useLoaderData, Await } from "react-router";
+import { useLoaderData } from "react-router";
 import Hero from "~/components/Hero";
 import type { Route } from "./+types/home";
 import TechStack from "~/components/TechStack";
@@ -63,7 +62,7 @@ async function fetchAndProcessPosts(): Promise<Post[]> {
 }
 
 export async function loader({}: Route.LoaderArgs) {
-  const posts = fetchAndProcessPosts();
+  const posts = await fetchAndProcessPosts();
   return { posts };
 }
 
@@ -109,11 +108,7 @@ export default function Home() {
     <div id="top" className="min-h-screen dark">
       <Hero />
       <TechStack />
-      <Suspense fallback={<BlogGridSkeleton />}>
-        <Await resolve={posts}>
-          {(resolved) => <BlogGrid posts={resolved} />}
-        </Await>
-      </Suspense>
+      <BlogGrid posts={posts} />
     </div>
   );
 }
