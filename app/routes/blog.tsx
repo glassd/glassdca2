@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useLoaderData, useSearchParams, Await } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import BlogCard from "../components/BlogCard";
 import TagChips from "../components/TagChips";
@@ -77,60 +77,41 @@ export async function loader({ request }: Route.LoaderArgs) {
   const countQuery = `count(*[${where}])`;
   const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
 
-  const initial = Promise.all([
+  const [rawPosts, total, tags] = await Promise.all([
     client.fetch<any[]>(listQuery, params),
     client.fetch<number>(countQuery, params),
     client.fetch<Tag[]>(tagsQuery),
-  ]).then(([rawPosts, total, tags]) => {
-    const posts: Post[] = rawPosts.map((p) => {
-      const base =
-        typeof p.excerpt === "string" && p.excerpt.trim().length > 0
-          ? p.excerpt.trim()
-          : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
-      const snippet = truncateAtWord(base, 200, "…");
-      return {
-        _id: p._id,
-        title: p.title,
-        slug: p.slug,
-        mainImage: p.mainImage,
-        publishedAt: p.publishedAt,
-        tags: p.tags,
-        snippet,
-      };
-    });
+  ]);
 
-    const nextOffset = posts.length;
-    const hasMore = nextOffset < total;
-
-    return { posts, tags, total, hasMore, nextOffset } satisfies InitialData;
+  const posts: Post[] = rawPosts.map((p) => {
+    const base =
+      typeof p.excerpt === "string" && p.excerpt.trim().length > 0
+        ? p.excerpt.trim()
+        : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
+    const snippet = truncateAtWord(base, 200, "…");
+    return {
+      _id: p._id,
+      title: p.title,
+      slug: p.slug,
+      mainImage: p.mainImage,
+      publishedAt: p.publishedAt,
+      tags: p.tags,
+      snippet,
+    };
   });
 
+  const nextOffset = posts.length;
+  const hasMore = nextOffset < total;
+
   return {
-    initial,
+    posts,
+    tags,
+    total,
+    hasMore,
+    nextOffset,
     initialQ: qRaw,
     initialTags: tagSlugs,
   };
-}
-
-function BlogContentSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-8">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse"
-        >
-          <div className="h-48 bg-muted" />
-          <div className="p-6 space-y-3">
-            <div className="h-4 bg-muted rounded w-1/3" />
-            <div className="h-6 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-2/3" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function BlogContent({ data }: { data: InitialData & { initialQ: string; initialTags: string[] } }) {
@@ -356,41 +337,12 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
 }
 
 export default function Blog() {
-  const { initial, initialQ, initialTags } = useLoaderData<typeof loader>();
+  const { initialQ, initialTags, ...rest } = useLoaderData<typeof loader>();
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-24">
       <h1 className="text-4xl font-bold text-foreground mb-6">Blog</h1>
-
-      <Suspense fallback={
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <BlogContentSkeleton />
-          </div>
-          <aside className="lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
-              <div>
-                <label htmlFor="blog-search" className="sr-only">
-                  Search posts
-                </label>
-                <input
-                  id="blog-search"
-                  type="text"
-                  placeholder="Search posts..."
-                  className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  disabled
-                />
-              </div>
-            </div>
-          </aside>
-        </div>
-      }>
-        <Await resolve={initial}>
-          {(resolved) => (
-            <BlogContent data={{ ...resolved, initialQ, initialTags }} />
-          )}
-        </Await>
-      </Suspense>
+      <BlogContent data={{ ...rest, initialQ, initialTags }} />
     </div>
   );
 }

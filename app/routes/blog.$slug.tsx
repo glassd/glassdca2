@@ -1,5 +1,5 @@
-import { Suspense, useMemo, useState } from "react";
-import { useLoaderData, useLocation, Await } from "react-router";
+import { useMemo, useState } from "react";
+import { useLoaderData, useLocation } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
@@ -33,8 +33,8 @@ type RelatedPost = {
 
 type LoaderData = {
   post: Post;
-  allTags: Promise<Tag[]>;
-  relatedPosts: Promise<RelatedPost[]>;
+  allTags: Tag[];
+  relatedPosts: RelatedPost[];
 };
 
 function formatDate(iso?: string | null) {
@@ -84,15 +84,15 @@ export async function loader({ params }: Route.LoaderArgs) {
     "slug": slug.current
   }`;
 
-  // Await post (needed for meta tags), defer the rest
-  const post = await client.fetch<Post | null>(postQuery, { slug });
+  const [post, allTags, relatedPosts] = await Promise.all([
+    client.fetch<Post | null>(postQuery, { slug }),
+    client.fetch<Tag[]>(tagsQuery),
+    client.fetch<RelatedPost[]>(relatedQuery, { slug }),
+  ]);
 
   if (!post) {
     throw new Response("Post not found", { status: 404 });
   }
-
-  const allTags = client.fetch<Tag[]>(tagsQuery);
-  const relatedPosts = client.fetch<RelatedPost[]>(relatedQuery, { slug });
 
   return { post, allTags, relatedPosts };
 }
@@ -169,27 +169,6 @@ function extractText(node: any): string {
 }
 
 type TocItem = { id: string; text: string; level: number };
-
-function SidebarSkeleton() {
-  return (
-    <div className="space-y-8 animate-pulse">
-      <div className="space-y-2">
-        <div className="h-4 bg-muted rounded w-1/3" />
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-6 bg-muted rounded-full w-16" />
-          ))}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <div className="h-4 bg-muted rounded w-1/3" />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-4 bg-muted rounded w-3/4" />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function BlogPostRoute() {
   const { post, allTags, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
@@ -455,30 +434,24 @@ export default function BlogPostRoute() {
               </a>
             </div>
 
-            <Suspense fallback={<SidebarSkeleton />}>
-              <Await resolve={allTags}>
-                {(resolvedTags) => (
-                  <div>
-                    <TagChips
-                      tags={resolvedTags}
-                      selected={selectedTags}
-                      onToggle={(slug) =>
-                        setSelectedTags((prev) =>
-                          prev.includes(slug)
-                            ? prev.filter((s) => s !== slug)
-                            : [...prev, slug]
-                        )
-                      }
-                      onClear={() => {
-                        setSelectedTags([]);
-                        setQ("");
-                      }}
-                      label="Filter by tags"
-                    />
-                  </div>
-                )}
-              </Await>
-            </Suspense>
+            <div>
+              <TagChips
+                tags={allTags}
+                selected={selectedTags}
+                onToggle={(slug) =>
+                  setSelectedTags((prev) =>
+                    prev.includes(slug)
+                      ? prev.filter((s) => s !== slug)
+                      : [...prev, slug]
+                  )
+                }
+                onClear={() => {
+                  setSelectedTags([]);
+                  setQ("");
+                }}
+                label="Filter by tags"
+              />
+            </div>
 
             {toc.length > 0 && (
               <div>
@@ -505,38 +478,25 @@ export default function BlogPostRoute() {
               </div>
             )}
 
-            <Suspense fallback={
-              <div className="space-y-2 animate-pulse">
-                <div className="h-4 bg-muted rounded w-1/3" />
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-4 bg-muted rounded w-3/4" />
-                ))}
+            {relatedPosts.length > 0 && (
+              <div>
+                <h2 className="mb-2 text-sm font-semibold text-foreground">
+                  Read next
+                </h2>
+                <ul className="space-y-2">
+                  {relatedPosts.map((p) => (
+                    <li key={p._id}>
+                      <a
+                        href={`/blog/${p.slug}${linkSuffix}`}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {p.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            }>
-              <Await resolve={relatedPosts}>
-                {(resolvedRelated) =>
-                  resolvedRelated.length > 0 ? (
-                    <div>
-                      <h2 className="mb-2 text-sm font-semibold text-foreground">
-                        Read next
-                      </h2>
-                      <ul className="space-y-2">
-                        {resolvedRelated.map((p) => (
-                          <li key={p._id}>
-                            <a
-                              href={`/blog/${p.slug}${linkSuffix}`}
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {p.title}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null
-                }
-              </Await>
-            </Suspense>
+            )}
           </div>
         </aside>
       </div>
