@@ -42,7 +42,7 @@ function formatDate(iso?: string | null) {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
