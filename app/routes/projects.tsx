@@ -20,6 +20,12 @@ interface Project {
   githubUrl?: string;
 }
 
+export function headers({}: Route.HeadersArgs) {
+  return {
+    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+  };
+}
+
 export async function loader({}: Route.LoaderArgs) {
   const query = `*[_type == "project"] | order(publishedAt desc) {
     _id,

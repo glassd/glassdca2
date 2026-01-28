@@ -39,6 +39,12 @@ type InitialData = {
 
 const PAGE_SIZE = 10;
 
+export function headers({}: Route.HeadersArgs) {
+  return {
+    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+  };
+}
+
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const qRaw = (url.searchParams.get("q") || "").trim();

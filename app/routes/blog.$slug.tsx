@@ -52,6 +52,12 @@ function formatDate(iso?: string | null) {
   }
 }
 
+export function headers({}: Route.HeadersArgs) {
+  return {
+    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+  };
+}
+
 export async function loader({ params }: Route.LoaderArgs) {
   const slug = params.slug;
   if (!slug) {
