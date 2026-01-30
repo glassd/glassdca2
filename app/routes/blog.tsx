@@ -75,8 +75,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     mainImage,
     publishedAt,
     "tags": tags[]->{ _id, title, "slug": slug.current },
-    bodyMarkdown,
-    excerpt
+    "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\n")[0]),
   }`;
 
   const listQuery = `*[${where}] | order(publishedAt desc, _id desc) [0...${PAGE_SIZE}] ${projection}`;
@@ -89,22 +88,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     client.fetch<Tag[]>(tagsQuery),
   ]);
 
-  const posts: Post[] = rawPosts.map((p) => {
-    const base =
-      typeof p.excerpt === "string" && p.excerpt.trim().length > 0
-        ? p.excerpt.trim()
-        : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
-    const snippet = truncateAtWord(base, 200, "…");
-    return {
-      _id: p._id,
-      title: p.title,
-      slug: p.slug,
-      mainImage: p.mainImage,
-      publishedAt: p.publishedAt,
-      tags: p.tags,
-      snippet,
-    };
-  });
+  const posts: Post[] = rawPosts.map((p) => ({
+    _id: p._id,
+    title: p.title,
+    slug: p.slug,
+    mainImage: p.mainImage,
+    publishedAt: p.publishedAt,
+    tags: p.tags,
+    snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
+  }));
 
   const nextOffset = posts.length;
   const hasMore = nextOffset < total;

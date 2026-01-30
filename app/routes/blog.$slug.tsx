@@ -72,32 +72,37 @@ export async function loader({ params }: Route.LoaderArgs) {
     publishedAt,
     "tags": tags[]->{ _id, title, "slug": slug.current },
     bodyMarkdown,
-    excerpt
+    excerpt,
+    "tagSlugs": tags[]->slug.current
   }`;
 
   const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
 
-  const relatedQuery = `*[
-    _type == "post" &&
-    defined(publishedAt) &&
-    slug.current != $slug &&
-    count(tags[@->slug.current in
-      *[_type == "post" && slug.current == $slug][0].tags[]->slug.current
-    ]) > 0
-  ] | order(publishedAt desc) [0...5] {
-    _id,
-    title,
-    "slug": slug.current
-  }`;
-
-  const [post, allTags, relatedPosts] = await Promise.all([
-    client.fetch<Post | null>(postQuery, { slug }),
+  const [post, allTags] = await Promise.all([
+    client.fetch<(Post & { tagSlugs?: string[] }) | null>(postQuery, { slug }),
     client.fetch<Tag[]>(tagsQuery),
-    client.fetch<RelatedPost[]>(relatedQuery, { slug }),
   ]);
 
   if (!post) {
     throw new Response("Post not found", { status: 404 });
+  }
+
+  const tagSlugs = post.tagSlugs ?? [];
+  delete (post as any).tagSlugs;
+
+  let relatedPosts: RelatedPost[] = [];
+  if (tagSlugs.length > 0) {
+    const relatedQuery = `*[
+      _type == "post" &&
+      defined(publishedAt) &&
+      slug.current != $slug &&
+      count(tags[@->slug.current in $tagSlugs]) > 0
+    ] | order(publishedAt desc) [0...5] {
+      _id,
+      title,
+      "slug": slug.current
+    }`;
+    relatedPosts = await client.fetch<RelatedPost[]>(relatedQuery, { slug, tagSlugs });
   }
 
   return data(

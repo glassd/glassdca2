@@ -41,8 +41,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     mainImage,
     publishedAt,
     "tags": tags[]->{ _id, title, "slug": slug.current },
-    bodyMarkdown,
-    excerpt
+    "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\\n")[0]),
   }`;
 
   const listQuery = `*[
@@ -57,17 +56,10 @@ export async function loader({ request }: Route.LoaderArgs) {
       client.fetch<number>(countQuery, params),
     ]);
 
-    // Compute snippet on the server: prefer explicit excerpt, else derive from markdown.
-    const postsWithSnippet = posts.map((p) => {
-      const base =
-        typeof p.excerpt === "string" && p.excerpt.trim().length > 0
-          ? p.excerpt.trim()
-          : stripMarkdown(
-              typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "",
-            );
-      const snippet = truncateAtWord(base, 200, "…");
-      return { ...p, snippet };
-    });
+    const postsWithSnippet = posts.map((p) => ({
+      ...p,
+      snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
+    }));
 
     const nextOffset = offset + posts.length;
     const hasMore = nextOffset < total;

@@ -37,28 +37,20 @@ async function fetchAndProcessPosts(): Promise<Post[]> {
     mainImage,
     publishedAt,
     "tags": tags[]->{ _id, title, "slug": slug.current },
-    bodyMarkdown,
-    excerpt
+    "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\n")[0]),
   }`;
 
   const posts = await client.fetch<any[]>(query);
 
-  return posts.map((p) => {
-    const base =
-      typeof p.excerpt === "string" && p.excerpt.trim().length > 0
-        ? p.excerpt.trim()
-        : stripMarkdown(typeof p.bodyMarkdown === "string" ? p.bodyMarkdown : "");
-    const snippet = truncateAtWord(base, 200, "…");
-    return {
-      _id: p._id,
-      title: p.title,
-      slug: p.slug,
-      mainImage: p.mainImage,
-      publishedAt: p.publishedAt,
-      tags: p.tags,
-      snippet,
-    };
-  });
+  return posts.map((p) => ({
+    _id: p._id,
+    title: p.title,
+    slug: p.slug,
+    mainImage: p.mainImage,
+    publishedAt: p.publishedAt,
+    tags: p.tags,
+    snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
+  }));
 }
 
 export function headers({}: Route.HeadersArgs) {
