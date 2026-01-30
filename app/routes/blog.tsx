@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLoaderData, useSearchParams } from "react-router";
+import { data, useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import BlogCard from "../components/BlogCard";
 import TagChips from "../components/TagChips";
@@ -109,15 +109,22 @@ export async function loader({ request }: Route.LoaderArgs) {
   const nextOffset = posts.length;
   const hasMore = nextOffset < total;
 
-  return {
-    posts,
-    tags,
-    total,
-    hasMore,
-    nextOffset,
-    initialQ: qRaw,
-    initialTags: tagSlugs,
-  };
+  return data(
+    {
+      posts,
+      tags,
+      total,
+      hasMore,
+      nextOffset,
+      initialQ: qRaw,
+      initialTags: tagSlugs,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    },
+  );
 }
 
 function BlogContent({ data }: { data: InitialData & { initialQ: string; initialTags: string[] } }) {

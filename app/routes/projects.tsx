@@ -1,4 +1,4 @@
-import { useLoaderData } from "react-router";
+import { data, useLoaderData } from "react-router";
 import type { Route } from "./+types/projects";
 import { client, urlFor } from "../lib/sanity";
 import { ProjectCard } from "../components/ProjectCard";
@@ -40,7 +40,14 @@ export async function loader({}: Route.LoaderArgs) {
 
   const projects = await client.fetch<Project[]>(query);
 
-  return { projects };
+  return data(
+    { projects },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    },
+  );
 }
 
 function ProjectList({ projects }: { projects: Project[] }) {

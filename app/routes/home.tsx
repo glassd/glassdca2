@@ -1,4 +1,4 @@
-import { useLoaderData } from "react-router";
+import { data, useLoaderData } from "react-router";
 import Hero from "~/components/Hero";
 import type { Route } from "./+types/home";
 import TechStack from "~/components/TechStack";
@@ -69,7 +69,14 @@ export function headers({}: Route.HeadersArgs) {
 
 export async function loader({}: Route.LoaderArgs) {
   const posts = await fetchAndProcessPosts();
-  return { posts };
+  return data(
+    { posts },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    },
+  );
 }
 
 export default function Home() {

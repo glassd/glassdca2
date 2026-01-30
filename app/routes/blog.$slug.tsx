@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLoaderData, useLocation } from "react-router";
+import { data, useLoaderData, useLocation } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
@@ -100,7 +100,14 @@ export async function loader({ params }: Route.LoaderArgs) {
     throw new Response("Post not found", { status: 404 });
   }
 
-  return { post, allTags, relatedPosts };
+  return data(
+    { post, allTags, relatedPosts },
+    {
+      headers: {
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
+      },
+    },
+  );
 }
 
 export function meta({ data }: Route.MetaArgs) {
