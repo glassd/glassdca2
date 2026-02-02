@@ -83,7 +83,7 @@ export default function Projects() {
   useEffect(() => {
     fetch("/api/projects")
       .then((res) => res.json())
-      .then((data) => setProjects(data.projects))
+      .then((data) => setProjects(data))
       .catch((err) => console.error("[Projects] Failed to fetch:", err));
   }, []);
 
