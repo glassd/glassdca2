@@ -1,10 +1,9 @@
-import { data, useLoaderData } from "react-router";
+import { useEffect, useState } from "react";
 import Hero from "~/components/Hero";
 import type { Route } from "./+types/home";
 import TechStack from "~/components/TechStack";
 import BlogGrid from "~/components/BlogGrid";
-import { client } from "../lib/sanity";
-import { stripMarkdown, truncateAtWord } from "../lib/utils";
+import SkeletonCard from "~/components/SkeletonCard";
 
 type Tag = {
   _id: string;
@@ -29,56 +28,41 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-async function fetchAndProcessPosts(): Promise<Post[]> {
-  const query = `*[_type == "post" && defined(publishedAt)] | order(publishedAt desc, _id desc) [0...3] {
-    _id,
-    title,
-    "slug": slug.current,
-    mainImage,
-    publishedAt,
-    "tags": tags[]->{ _id, title, "slug": slug.current },
-    "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\n")[0]),
-  }`;
-
-  const posts = await client.fetch<any[]>(query);
-
-  return posts.map((p) => ({
-    _id: p._id,
-    title: p.title,
-    slug: p.slug,
-    mainImage: p.mainImage,
-    publishedAt: p.publishedAt,
-    tags: p.tags,
-    snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
-  }));
-}
-
-export function headers({}: Route.HeadersArgs) {
-  return {
-    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-  };
-}
-
-export async function loader({}: Route.LoaderArgs) {
-  const posts = await fetchAndProcessPosts();
-  return data(
-    { posts },
-    {
-      headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-      },
-    },
-  );
-}
-
 export default function Home() {
-  const { posts } = useLoaderData<typeof loader>();
+  const [posts, setPosts] = useState<Post[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/blog/latest")
+      .then((res) => res.json())
+      .then((data) => setPosts(data))
+      .catch((err) => console.error("[Home] Failed to fetch latest posts:", err));
+  }, []);
 
   return (
     <div id="top" className="min-h-screen dark">
       <Hero />
       <TechStack />
-      <BlogGrid posts={posts} />
+      {posts === null ? (
+        <section className="py-24 bg-secondary">
+          <div className="container px-6">
+            <div className="mb-12">
+              <div className="h-4 w-28 animate-pulse rounded bg-muted mb-3" />
+              <div className="h-9 w-48 animate-pulse rounded bg-muted" />
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[0, 1, 2].map((i) => (
+                <SkeletonCard
+                  key={i}
+                  className="animate-fade-in-up rounded-2xl"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <BlogGrid posts={posts} />
+      )}
     </div>
   );
 }

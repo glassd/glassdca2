@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { data, useLoaderData, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import BlogCard from "../components/BlogCard";
+import SkeletonCard from "../components/SkeletonCard";
 import TagChips from "../components/TagChips";
-import { client } from "../lib/sanity";
-import { stripMarkdown, truncateAtWord } from "../lib/utils";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -29,111 +28,28 @@ type Post = {
   publishedAt?: string | null;
 };
 
-type InitialData = {
-  posts: Post[];
-  tags: Tag[];
-  total: number;
-  hasMore: boolean;
-  nextOffset: number;
-};
-
 const PAGE_SIZE = 10;
 
-export function headers({}: Route.HeadersArgs) {
-  return {
-    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-  };
-}
-
-export async function loader({ request }: Route.LoaderArgs) {
-  const url = new URL(request.url);
-  const qRaw = (url.searchParams.get("q") || "").trim();
-  const tagSlugs = (url.searchParams.get("tags") || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const filters: string[] = ['_type == "post"', "defined(publishedAt)"];
-  const params: Record<string, any> = {};
-
-  if (qRaw) {
-    params.q = `*${qRaw}*`;
-    filters.push("(title match $q || bodyMarkdown match $q)");
-  }
-
-  if (tagSlugs.length > 0) {
-    params.tagSlugs = tagSlugs;
-    filters.push("count(tags[@->slug.current in $tagSlugs]) > 0");
-  }
-
-  const where = filters.join(" && ");
-
-  const projection = `{
-    _id,
-    title,
-    "slug": slug.current,
-    mainImage,
-    publishedAt,
-    "tags": tags[]->{ _id, title, "slug": slug.current },
-    "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\n")[0]),
-  }`;
-
-  const listQuery = `*[${where}] | order(publishedAt desc, _id desc) [0...${PAGE_SIZE}] ${projection}`;
-  const countQuery = `count(*[${where}])`;
-  const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
-
-  const [rawPosts, total, tags] = await Promise.all([
-    client.fetch<any[]>(listQuery, params),
-    client.fetch<number>(countQuery, params),
-    client.fetch<Tag[]>(tagsQuery),
-  ]);
-
-  const posts: Post[] = rawPosts.map((p) => ({
-    _id: p._id,
-    title: p.title,
-    slug: p.slug,
-    mainImage: p.mainImage,
-    publishedAt: p.publishedAt,
-    tags: p.tags,
-    snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
-  }));
-
-  const nextOffset = posts.length;
-  const hasMore = nextOffset < total;
-
-  return data(
-    {
-      posts,
-      tags,
-      total,
-      hasMore,
-      nextOffset,
-      initialQ: qRaw,
-      initialTags: tagSlugs,
-    },
-    {
-      headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-      },
-    },
-  );
-}
-
-function BlogContent({ data }: { data: InitialData & { initialQ: string; initialTags: string[] } }) {
+function BlogContent() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [posts, setPosts] = useState<Post[]>(data.posts);
-  const [nextOffset, setNextOffset] = useState(data.nextOffset);
-  const [hasMore, setHasMore] = useState(data.hasMore);
-  const [loading, setLoading] = useState(false);
+  const initialQ = searchParams.get("q") || "";
+  const initialTags = (searchParams.get("tags") || "")
+    .split(",")
+    .filter(Boolean);
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [nextOffset, setNextOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [availableTags] = useState<Tag[]>(data.tags);
-  const [selectedTags, setSelectedTags] = useState<string[]>(data.initialTags);
-  const [q, setQ] = useState(data.initialQ);
-  const [debouncedQ, setDebouncedQ] = useState(data.initialQ);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
+  const [q, setQ] = useState(initialQ);
+  const [debouncedQ, setDebouncedQ] = useState(initialQ);
 
-  const [filtersChanged, setFiltersChanged] = useState(false);
+  const initialLoadDone = useRef(false);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -142,6 +58,43 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
     const handle = setTimeout(() => setDebouncedQ(q.trim()), 350);
     return () => clearTimeout(handle);
   }, [q]);
+
+  // Initial load
+  useEffect(() => {
+    let cancelled = false;
+
+    const params = new URLSearchParams();
+    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    if (initialQ) params.set("q", initialQ);
+    if (initialTags.length > 0) params.set("tags", initialTags.join(","));
+
+    Promise.all([
+      fetch(`/api/blog?${params.toString()}`).then((r) => r.json()),
+      fetch("/api/blog/tags").then((r) => r.json()),
+    ])
+      .then(([blogData, tagsData]) => {
+        if (cancelled) return;
+        setPosts(blogData.posts);
+        setNextOffset(blogData.nextOffset);
+        setHasMore(blogData.hasMore);
+        setAvailableTags(tagsData);
+        setLoading(false);
+        initialLoadDone.current = true;
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[Blog] Initial fetch failed:", err);
+        setError(err?.message || "Unknown error");
+        setLoading(false);
+        initialLoadDone.current = true;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -180,19 +133,9 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
     }
   };
 
+  // Filter changes (after initial load)
   useEffect(() => {
-    if (!filtersChanged) {
-      const qChanged = debouncedQ !== data.initialQ;
-      const tagsChanged =
-        selectedTags.length !== data.initialTags.length ||
-        selectedTags.some((t, i) => t !== data.initialTags[i]);
-
-      if (qChanged || tagsChanged) {
-        setFiltersChanged(true);
-      } else {
-        return;
-      }
-    }
+    if (!initialLoadDone.current) return;
 
     let cancelled = false;
 
@@ -235,7 +178,7 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
     return () => {
       cancelled = true;
     };
-  }, [debouncedQ, selectedTags, filtersChanged, data.initialQ, data.initialTags, setSearchParams]);
+  }, [debouncedQ, selectedTags, setSearchParams]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -271,7 +214,17 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       <div className="lg:col-span-3">
-        {posts.length === 0 && !loading ? (
+        {loading && posts.length === 0 ? (
+          <div className="grid grid-cols-1 gap-8">
+            {[0, 1, 2, 3].map((i) => (
+              <SkeletonCard
+                key={i}
+                className="animate-fade-in"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              />
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
           <div className="text-muted-foreground">No posts found.</div>
         ) : (
           <div className="grid grid-cols-1 gap-8">
@@ -342,12 +295,10 @@ function BlogContent({ data }: { data: InitialData & { initialQ: string; initial
 }
 
 export default function Blog() {
-  const { initialQ, initialTags, ...rest } = useLoaderData<typeof loader>();
-
   return (
     <div className="container mx-auto max-w-7xl px-4 py-24">
       <h1 className="text-4xl font-bold text-foreground mb-6">Blog</h1>
-      <BlogContent data={{ ...rest, initialQ, initialTags }} />
+      <BlogContent />
     </div>
   );
 }

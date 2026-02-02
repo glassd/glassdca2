@@ -11,4 +11,5 @@ export default [
   route("api/projects", "routes/api/projects.ts"),
   route("api/blog", "routes/api/blog.ts"),
   route("api/blog/tags", "routes/api/blog/tags.ts"),
+  route("api/blog/latest", "routes/api/blog/latest.ts"),
 ] satisfies RouteConfig;

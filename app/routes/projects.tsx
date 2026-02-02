@@ -1,6 +1,6 @@
-import { data, useLoaderData } from "react-router";
+import { useEffect, useState } from "react";
 import type { Route } from "./+types/projects";
-import { client, urlFor } from "../lib/sanity";
+import { urlFor } from "../lib/sanity";
 import { ProjectCard } from "../components/ProjectCard";
 
 export function meta({}: Route.MetaArgs) {
@@ -18,36 +18,6 @@ interface Project {
   description: string;
   liveUrl?: string;
   githubUrl?: string;
-}
-
-export function headers({}: Route.HeadersArgs) {
-  return {
-    "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-  };
-}
-
-export async function loader({}: Route.LoaderArgs) {
-  const query = `*[_type == "project"] | order(publishedAt desc) {
-    _id,
-    title,
-    slug,
-    mainImage,
-    description,
-    liveUrl,
-    githubUrl,
-    publishedAt
-  }`;
-
-  const projects = await client.fetch<Project[]>(query);
-
-  return data(
-    { projects },
-    {
-      headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
-      },
-    },
-  );
 }
 
 function ProjectList({ projects }: { projects: Project[] }) {
@@ -81,8 +51,41 @@ function ProjectList({ projects }: { projects: Project[] }) {
   );
 }
 
+function ProjectSkeleton({ index }: { index: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="bg-card rounded-xl shadow-sm overflow-hidden border border-border flex flex-col h-full animate-fade-in-up"
+      style={{ animationDelay: `${index * 0.1}s` }}
+    >
+      <div className="h-48 overflow-hidden">
+        <div className="h-full w-full animate-pulse bg-muted" />
+      </div>
+      <div className="p-6 flex flex-col grow">
+        <div className="h-6 w-3/4 animate-pulse rounded-md bg-muted mb-2" />
+        <div className="space-y-2 mb-4 grow">
+          <div className="h-3 w-full animate-pulse rounded bg-muted" />
+          <div className="h-3 w-11/12 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-9/12 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="flex gap-4 mt-auto pt-4 border-t border-border">
+          <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Projects() {
-  const { projects } = useLoaderData<typeof loader>();
+  const [projects, setProjects] = useState<Project[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((res) => res.json())
+      .then((data) => setProjects(data.projects))
+      .catch((err) => console.error("[Projects] Failed to fetch:", err));
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-24">
@@ -90,7 +93,15 @@ export default function Projects() {
         My Projects
       </h1>
 
-      <ProjectList projects={projects} />
+      {projects === null ? (
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <ProjectSkeleton key={i} index={i} />
+          ))}
+        </div>
+      ) : (
+        <ProjectList projects={projects} />
+      )}
     </div>
   );
 }
