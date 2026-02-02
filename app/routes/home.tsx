@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Hero from "~/components/Hero";
 import type { Route } from "./+types/home";
+import { seoMeta, SITE_URL, SITE_NAME } from "~/lib/seo";
 import TechStack from "~/components/TechStack";
 import BlogGrid from "~/components/BlogGrid";
 import SkeletonCard from "~/components/SkeletonCard";
@@ -23,8 +24,19 @@ type Post = {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "David Glass' Awesome Portfolio" },
-    { name: "glassd", content: "Whatever I want" },
+    ...seoMeta({
+      title: "David Glass - Developer Portfolio",
+      description: "Full-stack developer portfolio showcasing projects, blog posts, and more.",
+      url: "/",
+    }),
+    {
+      "script:ld+json": JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: SITE_NAME,
+        url: SITE_URL,
+      }),
+    },
   ];
 }
 

@@ -1,10 +1,12 @@
 import type { Route } from "./+types/about";
+import { seoMeta } from "~/lib/seo";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "About Me" },
-    { name: "description", content: "Learn more about me." },
-  ];
+  return seoMeta({
+    title: "About Me - David Glass",
+    description: "Learn more about David Glass, a full-stack developer passionate about building software and exploring technology.",
+    url: "/about",
+  });
 }
 
 export default function About() {

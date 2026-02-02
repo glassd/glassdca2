@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/projects";
+import { seoMeta } from "~/lib/seo";
 import { urlFor } from "../lib/sanity";
 import { ProjectCard } from "../components/ProjectCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "My Projects" },
-    { name: "description", content: "Check out my projects." },
-  ];
+  return seoMeta({
+    title: "Projects - David Glass",
+    description: "Explore my development projects and see what I've been building.",
+    url: "/projects",
+  });
 }
 
 interface Project {

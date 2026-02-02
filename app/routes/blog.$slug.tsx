@@ -3,6 +3,7 @@ import { data, useLoaderData, useLocation } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
+import { SITE_URL, SITE_NAME, TWITTER_HANDLE } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
@@ -121,19 +122,12 @@ export function meta({ data }: Route.MetaArgs) {
   const title = post?.title ? `${post.title} · Blog` : "Blog Post";
   const description = (post?.excerpt || "").trim() || "Read this blog post.";
 
-  const path = post?.slug ? `/blog/${post.slug}` : "/blog";
-  const site =
-    (typeof process !== "undefined" &&
-      (process as any).env &&
-      (process as any).env.PUBLIC_SITE_URL) ||
-    "";
-  const canonical = site ? new URL(path, site).toString() : path;
+  const canonical = `${SITE_URL}/blog/${post?.slug ?? ""}`;
 
   const rawImage = post?.mainImage
     ? urlFor(post.mainImage).width(1200).height(630).fit("crop").url()
     : undefined;
-  const ogImage =
-    rawImage && site ? new URL(rawImage, site).toString() : rawImage;
+  const ogImage = rawImage ?? undefined;
 
   const meta: any[] = [
     { title },
@@ -143,7 +137,9 @@ export function meta({ data }: Route.MetaArgs) {
     { property: "og:description", content: description },
     { property: "og:type", content: "article" },
     { property: "og:url", content: canonical },
+    { property: "og:site_name", content: SITE_NAME },
     { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:site", content: TWITTER_HANDLE },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
   ];
@@ -165,6 +161,32 @@ export function meta({ data }: Route.MetaArgs) {
       }
     }
   }
+
+  // BlogPosting JSON-LD
+  const blogPostingLd: Record<string, any> = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post?.title ?? title,
+    description,
+    url: canonical,
+    author: { "@type": "Person", name: SITE_NAME },
+  };
+  if (post?.publishedAt) blogPostingLd.datePublished = post.publishedAt;
+  if (ogImage) blogPostingLd.image = ogImage;
+  meta.push({ "script:ld+json": JSON.stringify(blogPostingLd) });
+
+  // BreadcrumbList JSON-LD
+  meta.push({
+    "script:ld+json": JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+        { "@type": "ListItem", position: 3, name: post?.title ?? "Post", item: canonical },
+      ],
+    }),
+  });
 
   return meta;
 }

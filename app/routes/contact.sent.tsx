@@ -1,13 +1,15 @@
 import type { Route } from "./+types/contact.sent";
+import { seoMeta } from "~/lib/seo";
 import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Message sent" },
-    {
-      name: "description",
-      content: "Your message has been sent successfully.",
-    },
+    ...seoMeta({
+      title: "Message Sent - David Glass",
+      description: "Your message has been sent successfully.",
+      url: "/contact/sent",
+    }),
+    { name: "robots", content: "noindex" },
   ];
 }
 

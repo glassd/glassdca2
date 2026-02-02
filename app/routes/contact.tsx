@@ -1,4 +1,5 @@
 import type { Route } from "./+types/contact";
+import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
 import { sendContactEmail } from "../lib/email.server";
 import {
@@ -12,10 +13,11 @@ import {
 } from "../lib/abuse.server";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Contact Me" },
-    { name: "description", content: "Get in touch with me." },
-  ];
+  return seoMeta({
+    title: "Contact Me - David Glass",
+    description: "Get in touch with David Glass.",
+    url: "/contact",
+  });
 }
 
 type ActionData = {

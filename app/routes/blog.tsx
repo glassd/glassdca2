@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
+import { seoMeta } from "~/lib/seo";
 import BlogCard from "../components/BlogCard";
 import SkeletonCard from "../components/SkeletonCard";
 import TagChips from "../components/TagChips";
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Blog" },
-    { name: "description", content: "Read my latest blog posts." },
-  ];
+  return seoMeta({
+    title: "Blog - David Glass",
+    description: "Read my latest blog posts on software development, AI, technology, and more.",
+    url: "/blog",
+  });
 }
 
 type Tag = {

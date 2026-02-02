@@ -12,4 +12,6 @@ export default [
   route("api/blog", "routes/api/blog.ts"),
   route("api/blog/tags", "routes/api/blog/tags.ts"),
   route("api/blog/latest", "routes/api/blog/latest.ts"),
+  route("sitemap.xml", "routes/sitemap[.]xml.ts"),
+  route("robots.txt", "routes/robots[.]txt.ts"),
 ] satisfies RouteConfig;
