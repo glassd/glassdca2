@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { data, useLoaderData, useLocation } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, data, useLoaderData } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
@@ -7,7 +7,6 @@ import { SITE_URL, SITE_NAME, TWITTER_HANDLE } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import TagChips from "../components/TagChips";
 
 type Tag = {
   _id: string;
@@ -37,21 +36,6 @@ type LoaderData = {
   allTags: Tag[];
   relatedPosts: RelatedPost[];
 };
-
-function formatDate(iso?: string | null) {
-  if (!iso) return null;
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  } catch {
-    return null;
-  }
-}
 
 export function headers({}: Route.HeadersArgs) {
   return {
@@ -162,7 +146,6 @@ export function meta({ data }: Route.MetaArgs) {
     }
   }
 
-  // BlogPosting JSON-LD
   const blogPostingLd: Record<string, any> = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -175,7 +158,6 @@ export function meta({ data }: Route.MetaArgs) {
   if (ogImage) blogPostingLd.image = ogImage;
   meta.push({ "script:ld+json": JSON.stringify(blogPostingLd) });
 
-  // BreadcrumbList JSON-LD
   meta.push({
     "script:ld+json": JSON.stringify({
       "@context": "https://schema.org",
@@ -200,346 +182,587 @@ function slugify(text: string) {
 }
 
 function extractText(node: any): string {
+  if (node == null) return "";
   if (Array.isArray(node)) return node.map(extractText).join("");
-  if (typeof node === "string") return node;
-  if (node && typeof node === "object" && "props" in node) {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (typeof node === "object" && "props" in node) {
     return extractText((node as any).props?.children);
   }
   return "";
 }
 
-type TocItem = { id: string; text: string; level: number };
+const LETTERS = "abcdefghijklmnopqrstuvwxyz";
+
+type Heading = { id: string; text: string; level: 2 | 3; num: string };
+
+function buildHeadings(md: string): Heading[] {
+  const items: Heading[] = [];
+  let h2Count = 0;
+  let h3LetterIdx = 0;
+  for (const rawLine of md.split("\n")) {
+    const line = rawLine.trimEnd();
+    const m = line.match(/^(#{2,3})\s+(.+)$/);
+    if (!m) continue;
+    const level = m[1].length as 2 | 3;
+    const text = m[2].replace(/#+\s*$/, "").trim();
+    if (!text) continue;
+    let num = "";
+    if (level === 2) {
+      h2Count += 1;
+      h3LetterIdx = 0;
+      num = String(h2Count).padStart(2, "0");
+    } else if (h2Count > 0) {
+      num = `${String(h2Count).padStart(2, "0")}${LETTERS[h3LetterIdx] ?? ""}`;
+      h3LetterIdx += 1;
+    }
+    items.push({ id: slugify(text), text, level, num });
+  }
+  return items;
+}
+
+function buildImageIndex(md: string, startAt: number): Map<string, number> {
+  const map = new Map<string, number>();
+  const re = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+  let m: RegExpExecArray | null;
+  let n = startAt;
+  while ((m = re.exec(md))) {
+    if (!map.has(m[1])) {
+      map.set(m[1], n);
+      n += 1;
+    }
+  }
+  return map;
+}
+
+function formatBreadcrumbDate(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return String(d.getFullYear());
+}
+
+function formatPubDate(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd}`;
+}
+
+function estimateReadMinutes(md: string | null | undefined) {
+  if (!md) return null;
+  const words = md.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 220));
+}
+
+function wordCount(md: string | null | undefined) {
+  if (!md) return 0;
+  return md.split(/\s+/).filter(Boolean).length;
+}
+
+const META =
+  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+const META_DIM =
+  "font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim";
+const META_ACID =
+  "font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid font-semibold";
 
 export default function BlogPostRoute() {
-  const { post, allTags, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
-  const prettyDate = formatDate(post.publishedAt);
+  const { post, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
 
   const hero = useMemo(() => {
     if (!post.mainImage) return null;
     try {
-      return urlFor(post.mainImage).width(1200).height(600).fit("crop").url();
+      return urlFor(post.mainImage).width(1600).height(685).fit("crop").url();
     } catch {
       return null;
     }
   }, [post.mainImage]);
 
-  const location = useLocation();
-  const initialParams = useMemo(
-    () => new URLSearchParams(location.search),
-    [location.search]
+  const md = post.bodyMarkdown || "";
+  const headings = useMemo(() => buildHeadings(md), [md]);
+  const headingNumById = useMemo(
+    () => new Map(headings.map((h) => [h.id, h.num])),
+    [headings],
+  );
+  const imgFigs = useMemo(
+    () => buildImageIndex(md, hero ? 2 : 1),
+    [md, hero],
   );
 
-  const [q, setQ] = useState<string>(initialParams.get("q") || "");
-  const [selectedTags, setSelectedTags] = useState<string[]>(
-    (initialParams.get("tags") || "").split(",").filter(Boolean)
+  const articleRef = useRef<HTMLElement>(null);
+  const [activeId, setActiveId] = useState<string | null>(
+    headings[0]?.id ?? null,
   );
+  const [progress, setProgress] = useState(0);
 
-  const backLink = useMemo(() => {
-    const p = new URLSearchParams();
-    if (q.trim()) p.set("q", q.trim());
-    if (selectedTags.length) p.set("tags", selectedTags.join(","));
-    const s = p.toString();
-    return s ? `/blog?${s}` : "/blog";
-  }, [q, selectedTags]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = articleRef.current;
+    if (!el) return;
 
-  const linkSuffix = useMemo(() => {
-    const p = new URLSearchParams();
-    if (q.trim()) p.set("q", q.trim());
-    if (selectedTags.length) p.set("tags", selectedTags.join(","));
-    const s = p.toString();
-    return s ? `?${s}` : "";
-  }, [q, selectedTags]);
+    const onScroll = () => {
+      const rect = el.getBoundingClientRect();
+      const total = el.offsetHeight - window.innerHeight;
+      const scrolled = Math.max(0, -rect.top);
+      setProgress(total > 0 ? Math.min(1, scrolled / total) : 0);
 
-  const toc: TocItem[] = useMemo(() => {
-    const items: TocItem[] = [];
-    const md = post.bodyMarkdown || "";
-    for (const line of md.split("\n")) {
-      const m = line.match(/^(#{1,6})\s+(.*)$/);
-      if (m) {
-        const level = m[1].length;
-        const raw = m[2].replace(/#+\s*$/, "").trim();
-        if (!raw) continue;
-        items.push({ id: slugify(raw), text: raw, level });
+      let current: string | null = headings[0]?.id ?? null;
+      for (const h of headings) {
+        const node = document.getElementById(h.id);
+        if (!node) continue;
+        if (node.getBoundingClientRect().top - 120 <= 0) current = h.id;
       }
-    }
-    return items;
-  }, [post.bodyMarkdown]);
+      setActiveId(current);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [headings]);
+
+  const sectionsDone = useMemo(() => {
+    if (!activeId) return 0;
+    const idx = headings.findIndex((h) => h.id === activeId);
+    return idx < 0 ? 0 : idx + 1;
+  }, [activeId, headings]);
+  const sectionsTotal = headings.length;
 
   const mdComponents = useMemo(
     () => ({
-      h1: (props: any) => {
-        const id = slugify(extractText(props.children || ""));
+      h1: ({ node: _n, children, ...props }: any) => {
+        const id = slugify(extractText(children));
         return (
-          <h1
-            {...props}
-            id={id || undefined}
-            className="mt-8 text-3xl font-bold text-foreground"
-          />
+          <h1 {...props} id={id || undefined}>
+            {children}
+          </h1>
         );
       },
-      h2: (props: any) => {
-        const id = slugify(extractText(props.children || ""));
+      h2: ({ node: _n, children, ...props }: any) => {
+        const text = extractText(children);
+        const id = slugify(text);
+        const num = headingNumById.get(id);
         return (
-          <h2
-            {...props}
-            id={id || undefined}
-            className="mt-8 text-2xl font-semibold text-foreground"
-          />
+          <h2 {...props} id={id || undefined}>
+            {num ? <span className="sd-num">§ {num}</span> : null}
+            <span>{children}</span>
+          </h2>
         );
       },
-      h3: (props: any) => {
-        const id = slugify(extractText(props.children || ""));
+      h3: ({ node: _n, children, ...props }: any) => {
+        const id = slugify(extractText(children));
         return (
-          <h3
-            {...props}
-            id={id || undefined}
-            className="mt-6 text-xl font-semibold text-foreground"
-          />
+          <h3 {...props} id={id || undefined}>
+            {children}
+          </h3>
         );
       },
-      p: (props: any) => (
-        <p
-          {...props}
-          className="my-4 leading-7 text-foreground/90"
-        />
-      ),
-      ul: (props: any) => (
-        <ul
-          {...props}
-          className="my-4 list-disc pl-6 space-y-1 text-foreground/90"
-        />
-      ),
-      ol: (props: any) => (
-        <ol
-          {...props}
-          className="my-4 list-decimal pl-6 space-y-1 text-foreground/90"
-        />
-      ),
-      li: (props: any) => <li {...props} className="leading-7" />,
-      code: (props: any) => (
-        <code
-          {...props}
-          className="rounded bg-secondary px-1 py-0.5 text-sm text-foreground"
-        />
-      ),
-      pre: (props: any) => (
-        <pre
-          {...props}
-          className="my-4 overflow-x-auto rounded-xl bg-[#1a1a2e] p-4 text-gray-100"
-        />
-      ),
-      a: (props: any) => {
+      p: ({ node, children, ...props }: any) => {
+        const kids = node?.children;
+        if (
+          Array.isArray(kids) &&
+          kids.length === 1 &&
+          kids[0]?.type === "element" &&
+          kids[0]?.tagName === "img"
+        ) {
+          return <>{children}</>;
+        }
+        return <p {...props}>{children}</p>;
+      },
+      a: ({ node: _n, href, children, ...props }: any) => {
         const isExternal =
-          typeof props.href === "string" && /^https?:\/\//.test(props.href);
+          typeof href === "string" && /^https?:\/\//.test(href);
         return (
           <a
             {...props}
+            href={href}
             target={isExternal ? "_blank" : undefined}
             rel={isExternal ? "noopener noreferrer" : undefined}
-            className="text-primary underline decoration-primary/30 hover:decoration-primary"
-          />
+          >
+            {children}
+          </a>
         );
       },
-      img: (props: any) => (
-        <img
-          {...props}
-          loading="lazy"
-          className="my-6 max-h-[600px] w-full rounded-xl object-contain"
-          alt={props.alt || ""}
-        />
-      ),
-      blockquote: (props: any) => (
-        <blockquote
-          {...props}
-          className="my-6 border-l-4 border-primary/40 pl-4 italic text-muted-foreground"
-        />
-      ),
-      hr: (props: any) => (
-        <hr {...props} className="my-8 border-border" />
-      ),
-      table: (props: any) => (
-        <div className="my-6 overflow-x-auto">
-          <table {...props} className="min-w-full border-collapse text-sm" />
-        </div>
-      ),
-      th: (props: any) => (
-        <th
-          {...props}
-          className="border-b border-border bg-secondary px-3 py-2 text-left font-medium"
-        />
-      ),
-      td: (props: any) => (
-        <td
-          {...props}
-          className="border-b border-border px-3 py-2 align-top"
-        />
-      ),
+      img: ({ node: _n, src, alt }: any) => {
+        const fig = (src && imgFigs.get(src)) ?? null;
+        const padded = fig != null ? String(fig).padStart(2, "0") : null;
+        return (
+          <figure>
+            <img src={src} alt={alt || ""} loading="lazy" />
+            {(alt || padded) && (
+              <figcaption>
+                {padded && <span className="sd-fig">FIG. {padded}</span>}
+                {alt && <span>{alt}</span>}
+              </figcaption>
+            )}
+          </figure>
+        );
+      },
+      pre: ({ node: _n, children, ...props }: any) => {
+        let lang: string | null = null;
+        const child = Array.isArray(children) ? children[0] : children;
+        const className = child?.props?.className;
+        if (typeof className === "string") {
+          const m = className.match(/language-([\w-]+)/);
+          if (m) lang = m[1];
+        }
+        return (
+          <pre {...props}>
+            {children}
+            {lang && (
+              <span className="sd-pre-label">{lang.toUpperCase()}</span>
+            )}
+          </pre>
+        );
+      },
     }),
-    []
+    [headingNumById, imgFigs],
   );
 
+  const year = formatBreadcrumbDate(post.publishedAt);
+  const pubDate = formatPubDate(post.publishedAt);
+  const readMin = estimateReadMinutes(md);
+  const words = wordCount(md);
+  const heroFigCaption = post.title || "cover image";
+
+  const initials = "DG";
+
+  const [prevPost, nextPost] = [
+    relatedPosts[0] ?? null,
+    relatedPosts[1] ?? null,
+  ];
+
   return (
-    <article className="container mx-auto max-w-7xl px-4 py-24">
-      <nav className="mb-6 text-sm">
-        <a
-          href={backLink}
-          className="inline-flex items-center text-primary hover:underline"
-        >
-          ← Back to Blog
-        </a>
-        <div className="mt-2 text-muted-foreground">
-          <a href={backLink} className="hover:underline">
-            Blog
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{post.title}</span>
-        </div>
-      </nav>
-      {/* Content + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3">
-          {/* Title + meta */}
-          <header className="mb-8">
-            <h1 className="text-4xl font-bold leading-tight text-foreground">
-              {post.title}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-              {prettyDate && (
-                <time className="text-muted-foreground">
-                  {prettyDate}
-                </time>
-              )}
-              {post.tags && post.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {post.tags.map((t) => (
-                    <a
-                      key={t._id}
-                      href={`/blog?tags=${encodeURIComponent(t.slug)}`}
-                      className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                    >
-                      #{t.title}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </header>
-
-          {/* Hero image */}
-          {hero && (
-            <div className="mb-8 overflow-hidden rounded-xl border border-border">
-              <img
-                src={hero}
-                alt={post.title}
-                className="h-auto w-full object-cover"
-                loading="eager"
-              />
-            </div>
+    <div className="relative px-8 pb-6 pt-7">
+      <div className="relative z-[2]">
+        {/* Breadcrumb */}
+        <div className="mb-7 flex items-baseline gap-3.5">
+          <Link
+            to="/blog"
+            className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid hover:underline"
+          >
+            ← BLOG
+          </Link>
+          {year && (
+            <>
+              <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
+                /
+              </span>
+              <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
+                {year}
+              </span>
+            </>
           )}
-          <section className="prose prose-invert max-w-none">
-            {post.bodyMarkdown ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeSanitize]}
-                components={mdComponents as any}
-              >
-                {post.bodyMarkdown}
-              </ReactMarkdown>
-            ) : (
-              <p className="text-muted-foreground">
-                This post has no content yet.
-              </p>
-            )}
-          </section>
+          {post.tags?.slice(0, 2).map((t) => (
+            <span key={t._id} className="flex items-baseline gap-3.5">
+              <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
+                /
+              </span>
+              <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
+                {t.title}
+              </span>
+            </span>
+          ))}
+          <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
+            /
+          </span>
+          <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-fg">
+            {post.slug}.MD
+          </span>
+          <div className="ml-3 h-px flex-1 bg-sd-rule2" />
+          <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
+            § BLOG / POST
+          </span>
         </div>
-        <aside className="lg:col-span-1">
-          <div className="sticky top-24 space-y-8">
-            <div>
-              <label htmlFor="post-search" className="sr-only">
-                Search posts
-              </label>
-              <input
-                id="post-search"
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search posts..."
-                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <a
-                href={backLink}
-                className="mt-2 inline-flex items-center text-sm text-primary hover:underline"
-              >
-                View results →
-              </a>
-            </div>
 
+        {/* 3-col grid: TOC | article | meta */}
+        <div className="mx-auto grid max-w-[1176px] grid-cols-[180px_720px_180px] items-start gap-12">
+          {/* Left: TOC */}
+          <aside className="sticky top-6 self-start">
+            <div className={`${META} text-sd-acid mb-3`}>// CONTENTS</div>
             <div>
-              <TagChips
-                tags={allTags}
-                selected={selectedTags}
-                onToggle={(slug) =>
-                  setSelectedTags((prev) =>
-                    prev.includes(slug)
-                      ? prev.filter((s) => s !== slug)
-                      : [...prev, slug]
-                  )
-                }
-                onClear={() => {
-                  setSelectedTags([]);
-                  setQ("");
-                }}
-                label="Filter by tags"
-              />
-            </div>
-
-            {toc.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-sm font-semibold text-foreground">
-                  Table of contents
-                </h2>
-                <ul className="space-y-1 text-sm">
-                  {toc.map((item, idx) => (
-                    <li
-                      key={idx}
-                      style={{
-                        paddingLeft: `${Math.min(item.level - 1, 3) * 12}px`,
-                      }}
+              {headings.map((h) => {
+                const active = h.id === activeId;
+                const sub = h.level === 3;
+                return (
+                  <a
+                    key={h.id + h.num}
+                    href={`#${h.id}`}
+                    className={
+                      "grid cursor-pointer items-baseline gap-3 border-t border-sd-rule py-[9px] transition-colors duration-150 " +
+                      (sub ? "pl-6 " : "") +
+                      "grid-cols-[24px_1fr]"
+                    }
+                  >
+                    <span
+                      className={
+                        "font-sd-mono text-[10px] tracking-[0.08em] " +
+                        (active ? "text-sd-acid" : "text-sd-faint") +
+                        (sub ? " invisible" : "")
+                      }
                     >
-                      <a
-                        href={`#${item.id}`}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {item.text}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                      {h.num}
+                    </span>
+                    <span
+                      className={
+                        "text-[13px] leading-[1.4] " +
+                        (active ? "text-sd-fg" : "text-sd-dim")
+                      }
+                    >
+                      {h.text}
+                    </span>
+                  </a>
+                );
+              })}
+              <div className="border-t border-sd-rule" />
+            </div>
+
+            {sectionsTotal > 0 && (
+              <div className="mt-[22px]">
+                <div className={META}>READ PROGRESS</div>
+                <div className="relative mt-2 h-1 bg-sd-rule">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-sd-acid"
+                    style={{ width: `${Math.round(progress * 100)}%` }}
+                  />
+                </div>
+                <div className={`${META} mt-2 text-sd-faint`}>
+                  {Math.round(progress * 100)}% · {sectionsDone} of{" "}
+                  {sectionsTotal} sections
+                </div>
               </div>
             )}
+          </aside>
 
-            {relatedPosts.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-sm font-semibold text-foreground">
-                  Read next
-                </h2>
-                <ul className="space-y-2">
-                  {relatedPosts.map((p) => (
-                    <li key={p._id}>
-                      <a
-                        href={`/blog/${p.slug}${linkSuffix}`}
-                        className="text-sm text-primary hover:underline"
-                      >
-                        {p.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+          {/* Middle: article */}
+          <div className="min-w-0">
+            <header className="mb-8">
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                {pubDate && (
+                  <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
+                    {pubDate}
+                  </span>
+                )}
+                {post.tags?.map((t) => (
+                  <span
+                    key={t._id}
+                    className="inline-flex items-center border border-sd-rule2 px-2.5 py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+                  >
+                    {t.title}
+                  </span>
+                ))}
+                <span className="flex-1" />
+                {readMin != null && (
+                  <span className={META}>
+                    {readMin} MIN · {words.toLocaleString()} WORDS
+                  </span>
+                )}
+              </div>
+
+              <h1 className="mb-[22px] font-sd-display text-[76px] font-bold leading-[0.9] tracking-[-0.03em] text-sd-fg">
+                {post.title}
+              </h1>
+
+              {post.excerpt && (
+                <p className="m-0 max-w-[680px] font-sd-display text-[20px] font-normal leading-[1.45] tracking-[-0.01em] text-sd-dim">
+                  {post.excerpt}
+                </p>
+              )}
+            </header>
+
+            {hero && (
+              <figure className="mb-10">
+                <div className="relative aspect-[21/9] overflow-hidden border border-sd-rule2 bg-sd-panel">
+                  <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                    FIG. 01
+                  </span>
+                  <img
+                    src={hero}
+                    alt={post.title}
+                    className="h-full w-full object-cover"
+                    loading="eager"
+                  />
+                </div>
+                <figcaption className="mt-[10px] flex gap-3 font-sd-mono text-[11px] uppercase tracking-[0.06em] text-sd-faint">
+                  <span className="text-sd-acid">FIG. 01</span>
+                  <span>{heroFigCaption}</span>
+                </figcaption>
+              </figure>
+            )}
+
+            <article ref={articleRef} className="sd-post-body">
+              {post.bodyMarkdown ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
+                  components={mdComponents as any}
+                >
+                  {post.bodyMarkdown}
+                </ReactMarkdown>
+              ) : (
+                <p>This post has no content yet.</p>
+              )}
+              <p
+                className="mt-9 border-t border-sd-rule2 pt-[18px] font-sd-mono text-[13px] uppercase tracking-[0.06em] text-sd-faint"
+                style={{ maxWidth: 680 }}
+              >
+                // END · POSTED FROM TORONTO ·{" "}
+                {words.toLocaleString()} WORDS
+              </p>
+            </article>
+
+            {/* Prev / Next from related posts */}
+            {(prevPost || nextPost) && (
+              <div className="mt-14 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule">
+                {prevPost ? (
+                  <Link
+                    to={`/blog/${prevPost.slug}`}
+                    className="bg-sd-bg px-[22px] py-5 no-underline transition-colors duration-150 hover:bg-sd-panel"
+                  >
+                    <div className={META}>← PREV</div>
+                    <div className="mt-[10px] font-sd-display text-[20px] font-semibold leading-[1.1] text-sd-fg">
+                      {prevPost.title}
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="bg-sd-bg" />
+                )}
+                {nextPost ? (
+                  <Link
+                    to={`/blog/${nextPost.slug}`}
+                    className="bg-sd-bg px-[22px] py-5 text-right no-underline transition-colors duration-150 hover:bg-sd-panel"
+                  >
+                    <div className={META}>NEXT →</div>
+                    <div className="mt-[10px] font-sd-display text-[20px] font-semibold leading-[1.1] text-sd-fg">
+                      {nextPost.title}
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="bg-sd-bg" />
+                )}
               </div>
             )}
           </div>
-        </aside>
+
+          {/* Right: meta sidebar */}
+          <aside className="sticky top-6 self-start">
+            <div className={`${META} text-sd-acid mb-3`}>// AUTHOR</div>
+            <div className="flex items-center gap-3 border-y border-sd-rule2 py-3">
+              <div className="flex h-10 w-10 items-center justify-center bg-sd-acid font-sd-display text-[18px] font-bold text-sd-bg">
+                {initials}
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-sd-fg">
+                  David Glass
+                </div>
+                <div className={`${META} mt-[2px]`}>FULL-STACK · TORONTO</div>
+              </div>
+            </div>
+
+            <div className={`${META} text-sd-acid mt-6 mb-3`}>// SHARE</div>
+            <ShareButtons title={post.title} slug={post.slug} />
+
+            {relatedPosts.length > 0 && (
+              <>
+                <div className={`${META} text-sd-acid mt-7 mb-3`}>
+                  // READ NEXT
+                </div>
+                <ol className="m-0 list-none p-0 text-sm leading-[1.55] text-sd-dim">
+                  {relatedPosts.map((p, i) => (
+                    <li
+                      key={p._id}
+                      className="border-t border-sd-rule py-2 last:border-b"
+                    >
+                      <Link
+                        to={`/blog/${p.slug}`}
+                        className="flex items-baseline gap-2 text-sd-fg no-underline hover:underline"
+                      >
+                        <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
+                          [{String(i + 1).padStart(2, "0")}]
+                        </span>
+                        <span className="text-[12px] text-sd-dim">
+                          {p.title}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+          </aside>
+        </div>
       </div>
-    </article>
+    </div>
+  );
+}
+
+function ShareButtons({ title, slug }: { title: string; slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const url =
+    typeof window !== "undefined"
+      ? window.location.href
+      : `${SITE_URL}/blog/${slug}`;
+
+  const onCopy = async () => {
+    if (typeof navigator === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const items: Array<{ label: string; href?: string; onClick?: () => void }> =
+    [
+      { label: copied ? "COPIED ✓" : "COPY LINK", onClick: onCopy },
+      {
+        label: "POST TO X",
+        href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+          title,
+        )}&url=${encodeURIComponent(url)}`,
+      },
+      {
+        label: "POST TO LINKEDIN",
+        href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          url,
+        )}`,
+      },
+      {
+        label: "EMAIL A FRIEND",
+        href: `mailto:?subject=${encodeURIComponent(
+          title,
+        )}&body=${encodeURIComponent(url)}`,
+      },
+    ];
+
+  return (
+    <div className="flex flex-col gap-2">
+      {items.map((it) =>
+        it.href ? (
+          <a
+            key={it.label}
+            href={it.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+          >
+            {it.label} ↗
+          </a>
+        ) : (
+          <button
+            key={it.label}
+            type="button"
+            onClick={it.onClick}
+            className="border border-sd-rule2 px-[10px] py-2 text-left font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid"
+          >
+            {it.label} ↗
+          </button>
+        ),
+      )}
+    </div>
   );
 }

@@ -162,6 +162,204 @@
   }
 }
 
+/* ─── Direction C post body ───
+   Global selectors on .sd-post-body * — react-markdown emits plain
+   HTML and these styles cover the markdown render mapping from the
+   handoff README. Scoped under .sd-post-body so nothing else inherits. */
+@layer components {
+  .sd-post-body {
+    font-family: var(--sd-font-sans);
+    color: var(--sd-fg);
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  .sd-post-body > * {
+    max-width: 680px;
+  }
+  .sd-post-body p {
+    color: #d4d4d4;
+    margin: 0 0 22px;
+  }
+  .sd-post-body p strong,
+  .sd-post-body strong {
+    color: var(--sd-fg);
+    font-weight: 600;
+  }
+  .sd-post-body em {
+    font-style: italic;
+    color: var(--sd-acid);
+  }
+  .sd-post-body h2 {
+    font-family: var(--sd-font-display);
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin: 56px 0 22px;
+    scroll-margin-top: 100px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .sd-post-body h2 .sd-num {
+    font-family: var(--sd-font-mono);
+    font-size: 11px;
+    color: var(--sd-acid);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+  .sd-post-body h3 {
+    font-family: var(--sd-font-display);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 36px 0 14px;
+    scroll-margin-top: 100px;
+    color: var(--sd-fg);
+  }
+  .sd-post-body a {
+    color: var(--sd-acid);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .sd-post-body blockquote {
+    margin: 28px 0;
+    padding: 18px 26px;
+    border-left: 2px solid var(--sd-acid);
+    font-family: var(--sd-font-display);
+    font-size: 22px;
+    font-style: italic;
+    line-height: 1.35;
+    color: var(--sd-fg);
+    background: rgba(216, 255, 58, 0.04);
+  }
+  .sd-post-body ul,
+  .sd-post-body ol {
+    color: #d4d4d4;
+    padding-left: 0;
+    margin: 0 0 22px;
+    list-style: none;
+  }
+  .sd-post-body ul li,
+  .sd-post-body ol li {
+    padding: 4px 0 4px 28px;
+    position: relative;
+  }
+  .sd-post-body ul li::before {
+    content: "▸";
+    color: var(--sd-acid);
+    position: absolute;
+    left: 6px;
+    top: 4px;
+  }
+  .sd-post-body ol {
+    counter-reset: sd-ol;
+  }
+  .sd-post-body ol li {
+    counter-increment: sd-ol;
+  }
+  .sd-post-body ol li::before {
+    content: counter(sd-ol, decimal-leading-zero);
+    color: var(--sd-acid);
+    position: absolute;
+    left: 0;
+    top: 6px;
+    font-family: var(--sd-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .sd-post-body :not(pre) > code {
+    font-family: var(--sd-font-mono);
+    font-size: 13px;
+    background: var(--sd-panel);
+    padding: 2px 6px;
+    color: var(--sd-fg);
+  }
+  .sd-post-body pre {
+    max-width: 760px;
+    margin: 28px 0;
+    padding: 20px 22px;
+    background: var(--sd-panel);
+    border: 1px solid var(--sd-rule2);
+    font-family: var(--sd-font-mono);
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-x: auto;
+    position: relative;
+    color: #e5e5e5;
+  }
+  .sd-post-body pre code {
+    background: transparent;
+    padding: 0;
+    font-size: 13px;
+  }
+  .sd-post-body pre .sd-pre-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 4px 10px;
+    background: var(--sd-acid);
+    color: var(--sd-bg);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: var(--sd-font-mono);
+  }
+  .sd-post-body figure {
+    max-width: 100%;
+    margin: 32px 0;
+  }
+  .sd-post-body figure img {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--sd-rule2);
+  }
+  .sd-post-body figcaption {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    font-family: var(--sd-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sd-faint);
+  }
+  .sd-post-body figcaption .sd-fig {
+    color: var(--sd-acid);
+  }
+  .sd-post-body hr {
+    max-width: 680px;
+    border: 0;
+    border-top: 1px solid var(--sd-rule2);
+    margin: 56px 0;
+  }
+  .sd-post-body table {
+    width: 100%;
+    max-width: 680px;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .sd-post-body th,
+  .sd-post-body td {
+    border-bottom: 1px solid var(--sd-rule2);
+    padding: 10px 12px;
+    text-align: left;
+    color: #d4d4d4;
+  }
+  .sd-post-body th {
+    color: var(--sd-fg);
+    font-weight: 600;
+    font-family: var(--sd-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
 @layer utilities {
   .gradient-text {
     background: var(--gradient-primary);
