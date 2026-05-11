@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@10..48,400;10..48,500;10..48,600;10..48,700;10..48,800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @config "../tailwind.config.ts";
@@ -63,6 +63,23 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 250 85% 60%;
+
+    /* ─── Direction C "System Diagram" tokens ─── */
+    /* Color */
+    --sd-bg: #0a0a0a;
+    --sd-panel: #111111;
+    --sd-fg: #fafafa;
+    --sd-dim: #a3a3a3;
+    --sd-faint: #525252;
+    --sd-rule: #1f1f1f;
+    --sd-rule2: #2a2a2a;
+    --sd-acid: #d8ff3a;
+    --sd-acid-dim: #a4c425;
+
+    /* Type families */
+    --sd-font-display: "Bricolage Grotesque", "Inter Display", Inter, sans-serif;
+    --sd-font-sans: "Geist", "Inter", -apple-system, sans-serif;
+    --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
   }
 
   .dark {

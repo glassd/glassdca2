@@ -21,6 +21,14 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         display: ["Space Grotesk", "system-ui", "sans-serif"],
+        "sd-display": [
+          "Bricolage Grotesque",
+          "Inter Display",
+          "Inter",
+          "sans-serif",
+        ],
+        "sd-sans": ["Geist", "Inter", "-apple-system", "sans-serif"],
+        "sd-mono": ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -66,6 +74,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        sd: {
+          bg: "var(--sd-bg)",
+          panel: "var(--sd-panel)",
+          fg: "var(--sd-fg)",
+          dim: "var(--sd-dim)",
+          faint: "var(--sd-faint)",
+          rule: "var(--sd-rule)",
+          rule2: "var(--sd-rule2)",
+          acid: "var(--sd-acid)",
+          "acid-dim": "var(--sd-acid-dim)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -105,6 +124,14 @@ export default {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        "sd-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "sd-pulse": {
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(0.8)", opacity: "0.5" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -115,6 +142,8 @@ export default {
         float: "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         "gradient-x": "gradient-x 3s ease infinite",
+        "sd-marquee": "sd-marquee 28s linear infinite",
+        "sd-pulse": "sd-pulse 1.6s ease-in-out infinite",
       },
     },
   },
