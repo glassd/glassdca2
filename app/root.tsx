@@ -10,8 +10,9 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import "./index.css";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import SDNav from "./components/sd/SDNav";
+import SDGrid from "./components/sd/SDGrid";
+import SDFooterMeta from "./components/sd/SDFooterMeta";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -35,11 +36,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1 viewport-fit=cover"
         />
-        <meta name="theme-color" content="#101218" />
+        <meta name="theme-color" content="#0a0a0a" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="bg-sd-bg text-sd-fg font-sd-sans">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -50,12 +51,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <div className="min-h-screen dark gradient-hero flex flex-col">
-      <Navbar />
-      <main className="grow">
+    <div className="relative flex min-h-screen flex-col bg-sd-bg text-sd-fg">
+      <SDGrid />
+      <SDNav />
+      <main className="relative z-[1] grow">
         <Outlet />
       </main>
-      <Footer />
+      <SDFooterMeta />
     </div>
   );
 }
