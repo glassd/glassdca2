@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Route } from "./+types/contact";
 import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
@@ -47,7 +48,7 @@ export async function action({
   const message = String(form.get("message") || "").trim();
 
   // Honeypot + timing
-  const company = String(form.get("company") || "").trim(); // honeypot field - should be blank
+  const company = String(form.get("company") || "").trim();
   const startedAtRaw = String(form.get("startedAt") || "0");
   const startedAt = Number(startedAtRaw);
 
@@ -62,7 +63,6 @@ export async function action({
     deltaMs: now - startedAt,
   });
 
-  // Optional origin hardening (if PUBLIC_SITE_URL is set)
   const publicSiteUrl = (process as any)?.env?.PUBLIC_SITE_URL;
   if (!originAllowed(request, publicSiteUrl)) {
     console.warn(`[contact:${reqId}] origin not allowed`, {
@@ -73,7 +73,6 @@ export async function action({
     return { errors: { general: "Unable to process request." } };
   }
 
-  // Honeypot trap and basic bot signals
   if (company) {
     console.warn(
       `[contact:${reqId}] honeypot triggered (company field not empty)`,
@@ -98,7 +97,6 @@ export async function action({
     };
   }
 
-  // Validation
   const errors: ActionData["errors"] = {};
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.email = "Please enter a valid email address.";
@@ -118,7 +116,6 @@ export async function action({
     return { errors };
   }
 
-  // Abuse protections: rate limit + duplicate throttle
   const ip = getClientIp(request);
   console.log(`[contact:${reqId}] client IP`, { ip });
 
@@ -147,7 +144,6 @@ export async function action({
     };
   }
 
-  // Send email via SMTP relay (no auth)
   console.log(`[contact:${reqId}] passing abuse checks, about to send email`, {
     email,
     subject,
@@ -183,117 +179,235 @@ export async function action({
   }
 }
 
+const META =
+  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+const META_ACID =
+  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+const FIELD_LABEL =
+  "block font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+
+const CONTACT_CARDS: Array<[string, string]> = [
+  ["DIRECT", "HELLO@GLASSD.CA"],
+  ["LOCATION", "TORONTO · GMT-5"],
+  ["TWITTER", "@DAGLASSD"],
+  ["GITHUB", "/GLASSD"],
+];
+
 export default function Contact() {
   const data = useActionData<ActionData>();
   const nav = useNavigation();
   const sending = nav.state === "submitting";
-  const startedAt = Date.now();
+  // Initialize to 0 so SSR and the first client render match, then
+  // stamp the real timestamp once the form has been rendered to the
+  // user. The action treats a value of 0 as "too fast" but the
+  // useEffect runs synchronously after mount, before any user
+  // submit, so by the time the form is interactive startedAt is set.
+  const [startedAt, setStartedAt] = useState(0);
+  useEffect(() => {
+    setStartedAt(Date.now());
+  }, []);
 
   return (
-    <div className="container mx-auto px-4 py-24 max-w-2xl">
-      <h1 className="text-4xl font-bold text-foreground mb-6">
-        Contact Me
-      </h1>
-
-      {data?.ok ? (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-green-400">
-          Thanks! Your message has been sent.
+    <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
+      <div className="relative z-[2] mx-auto max-w-[1176px]">
+        {/* Section label */}
+        <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
+          <span className={META}>§ 05 — TRANSMIT</span>
+          <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
+          <span className={META}>REPLIES IN ≤ 24H · NO TRACKING</span>
         </div>
-      ) : (
-        <Form method="post" replace className="space-y-4" noValidate>
-          {/* Honeypot (hidden) */}
-          <input
-            type="text"
-            name="company"
-            tabIndex={-1}
-            autoComplete="off"
-            className="hidden"
-          />
 
-          {/* Started-at timestamp for anti-bot timing */}
-          <input type="hidden" name="startedAt" value={String(startedAt)} />
+        {/* Hero */}
+        <h1 className="mb-10 font-sd-display text-[68px] font-bold leading-[0.9] tracking-[-0.03em] text-sd-fg md:mb-14 md:text-[120px] md:leading-[0.86] xl:text-[180px]">
+          SAY{" "}
+          <span className="text-sd-acid">
+            HI<span className="text-sd-fg">.</span>
+          </span>
+        </h1>
 
+        {/* 2-col body */}
+        <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-2 md:gap-12 xl:gap-16">
+          {/* Left: direct contact + status */}
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-muted-foreground"
-            >
-              Your email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            {data?.errors?.email && (
-              <p className="mt-1 text-sm text-destructive">
-                {data.errors.email}
-              </p>
-            )}
-          </div>
+            <p className="m-0 max-w-[460px] text-[14px] leading-[1.65] text-sd-dim md:text-[16px]">
+              Project inquiries, recruiting, or just &ldquo;hey I liked your
+              post&rdquo; — all welcome. I read everything and reply within
+              a day.
+            </p>
 
-          <div>
-            <label
-              htmlFor="subject"
-              className="block text-sm font-medium text-muted-foreground"
-            >
-              Subject
-            </label>
-            <input
-              id="subject"
-              name="subject"
-              type="text"
-              required
-              maxLength={200}
-              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            {data?.errors?.subject && (
-              <p className="mt-1 text-sm text-destructive">
-                {data.errors.subject}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="message"
-              className="block text-sm font-medium text-muted-foreground"
-            >
-              Message
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              required
-              rows={8}
-              maxLength={5000}
-              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            {data?.errors?.message && (
-              <p className="mt-1 text-sm text-destructive">
-                {data.errors.message}
-              </p>
-            )}
-          </div>
-
-          {data?.errors?.general && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-destructive">
-              {data.errors.general}
+            <div className="mt-9 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule">
+              {CONTACT_CARDS.map(([k, v]) => (
+                <div key={k} className="relative bg-sd-bg p-[22px]">
+                  <div className={`${META_ACID} mb-2`}>{k}</div>
+                  <div className="font-sd-mono text-[15px] font-semibold tracking-[0.01em] text-sd-fg md:text-[16px]">
+                    {v}
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={sending}
-              className="inline-flex items-center rounded-xl gradient-bg px-6 py-2.5 font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
-            >
-              {sending ? "Sending..." : "Send message"}
-            </button>
+            {/* Status panel */}
+            <div className="relative mt-7 border border-sd-acid p-[18px_22px]">
+              <span className="pointer-events-none absolute -left-px -top-px h-2.5 w-2.5 border-l border-t border-sd-acid" />
+              <span className="pointer-events-none absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r border-sd-acid" />
+              <div className={`${META_ACID} mb-2`}>STATUS</div>
+              <div className="flex items-baseline gap-2 text-[14px] leading-[1.3]">
+                <span className="text-sd-acid">●</span>
+                <span className="font-sd-display text-[18px] font-semibold leading-[1.2] text-sd-fg md:text-[20px]">
+                  OPEN TO NEW PROJECTS — Q3 / Q4 2026
+                </span>
+              </div>
+            </div>
           </div>
-        </Form>
+
+          {/* Right: form */}
+          <div className="relative border border-sd-rule2 p-6 md:p-8">
+            <span className="pointer-events-none absolute -left-px -top-px h-2.5 w-2.5 border-l border-t border-sd-acid" />
+            <span className="pointer-events-none absolute -top-px -right-px h-2.5 w-2.5 border-r border-t border-sd-acid" />
+            <span className="pointer-events-none absolute -bottom-px -left-px h-2.5 w-2.5 border-b border-l border-sd-acid" />
+            <span className="pointer-events-none absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r border-sd-acid" />
+
+            <div className={`${META_ACID} mb-6`}>// FORM_001</div>
+
+            {data?.ok ? (
+              <div className="border border-sd-acid p-4 font-sd-mono text-[12px] uppercase tracking-[0.06em] text-sd-acid">
+                ● TRANSMITTED. THANKS FOR REACHING OUT.
+              </div>
+            ) : (
+              <Form
+                method="post"
+                replace
+                noValidate
+                className="flex flex-col gap-[26px]"
+              >
+                {/* Honeypot */}
+                <input
+                  type="text"
+                  name="company"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                />
+                <input
+                  type="hidden"
+                  name="startedAt"
+                  value={String(startedAt)}
+                />
+
+                <FormField
+                  id="email"
+                  type="email"
+                  number="01"
+                  label="EMAIL"
+                  placeholder="you@somewhere.com"
+                  error={data?.errors?.email}
+                  required
+                />
+                <FormField
+                  id="subject"
+                  type="text"
+                  number="02"
+                  label="SUBJECT"
+                  placeholder="quick chat about a project"
+                  maxLength={200}
+                  error={data?.errors?.subject}
+                  required
+                />
+                <FormField
+                  id="message"
+                  type="textarea"
+                  number="03"
+                  label="MESSAGE"
+                  placeholder="hi david, i'd love to talk about…"
+                  maxLength={5000}
+                  rows={6}
+                  error={data?.errors?.message}
+                  required
+                />
+
+                {data?.errors?.general && (
+                  <div className="border border-sd-acid p-3 font-sd-mono text-[11px] uppercase tracking-[0.06em] text-sd-acid">
+                    {data.errors.general}
+                  </div>
+                )}
+
+                <div className="mt-2 flex flex-wrap items-center gap-4">
+                  <button
+                    type="submit"
+                    disabled={sending}
+                    className="inline-flex items-center gap-2 border border-sd-acid bg-sd-acid px-[22px] py-[14px] font-sd-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-sd-bg transition-colors duration-150 hover:bg-sd-fg hover:border-sd-fg disabled:opacity-60"
+                  >
+                    {sending ? "TRANSMITTING…" : "TRANSMIT ↗"}
+                  </button>
+                  <span className={META}>⌘ + ENTER</span>
+                </div>
+              </Form>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormField({
+  id,
+  type,
+  number,
+  label,
+  placeholder,
+  error,
+  required,
+  maxLength,
+  rows,
+}: {
+  id: "email" | "subject" | "message";
+  type: "email" | "text" | "textarea";
+  number: string;
+  label: string;
+  placeholder: string;
+  error?: string;
+  required?: boolean;
+  maxLength?: number;
+  rows?: number;
+}) {
+  const base =
+    "w-full bg-transparent border-0 border-b border-sd-fg pb-2 pt-1 font-sd-mono text-[16px] text-sd-fg placeholder:text-sd-faint focus:border-sd-acid focus:outline-none transition-colors";
+
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className={`${FIELD_LABEL} mb-2 flex items-baseline gap-2`}
+      >
+        <span className="text-sd-acid">{number} —</span>
+        <span>{label}</span>
+      </label>
+      {type === "textarea" ? (
+        <textarea
+          id={id}
+          name={id}
+          required={required}
+          maxLength={maxLength}
+          rows={rows}
+          placeholder={placeholder}
+          className={`${base} min-h-[120px] resize-y leading-[1.5]`}
+        />
+      ) : (
+        <input
+          id={id}
+          name={id}
+          type={type}
+          required={required}
+          maxLength={maxLength}
+          placeholder={placeholder}
+          className={base}
+        />
+      )}
+      {error && (
+        <p className="mt-1.5 font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+          {error}
+        </p>
       )}
     </div>
   );
