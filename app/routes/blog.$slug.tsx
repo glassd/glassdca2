@@ -435,10 +435,10 @@ export default function BlogPostRoute() {
   ];
 
   return (
-    <div className="relative px-8 pb-6 pt-7">
+    <div className="relative px-[18px] pb-6 pt-5 md:px-7 md:pt-6 xl:px-8 xl:pt-7">
       <div className="relative z-[2]">
         {/* Breadcrumb */}
-        <div className="mb-7 flex items-baseline gap-3.5">
+        <div className="mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1.5 md:gap-3.5">
           <Link
             to="/blog"
             className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid hover:underline"
@@ -456,7 +456,7 @@ export default function BlogPostRoute() {
             </>
           )}
           {post.tags?.slice(0, 2).map((t) => (
-            <span key={t._id} className="flex items-baseline gap-3.5">
+            <span key={t._id} className="flex items-baseline gap-3 md:gap-3.5">
               <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
                 /
               </span>
@@ -471,16 +471,51 @@ export default function BlogPostRoute() {
           <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-fg">
             {post.slug}.MD
           </span>
-          <div className="ml-3 h-px flex-1 bg-sd-rule2" />
+          <div className="ml-3 hidden h-px flex-1 bg-sd-rule2 xl:block" />
           <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
             § BLOG / POST
           </span>
         </div>
 
-        {/* 3-col grid: TOC | article | meta */}
-        <div className="mx-auto grid max-w-[1176px] grid-cols-[180px_720px_180px] items-start gap-12">
-          {/* Left: TOC */}
-          <aside className="sticky top-6 self-start">
+        {/* Mobile: collapsible TOC accordion */}
+        {headings.length > 0 && (
+          <details className="mb-6 border border-sd-rule2 xl:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid">
+              <span>// CONTENTS</span>
+              <span className="text-sd-faint">▾</span>
+            </summary>
+            <ol className="m-0 list-none p-0">
+              {headings.map((h) => (
+                <li key={h.id + h.num} className="border-t border-sd-rule">
+                  <a
+                    href={`#${h.id}`}
+                    className={
+                      "flex items-baseline gap-3 px-4 py-2.5 no-underline " +
+                      (h.level === 3 ? "pl-10 " : "") +
+                      (h.id === activeId ? "text-sd-fg" : "text-sd-dim")
+                    }
+                  >
+                    <span
+                      className={
+                        "font-sd-mono text-[10px] tracking-[0.08em] " +
+                        (h.id === activeId ? "text-sd-acid" : "text-sd-faint") +
+                        (h.level === 3 ? " invisible" : "")
+                      }
+                    >
+                      {h.num}
+                    </span>
+                    <span className="text-[13px]">{h.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+
+        {/* Grid: TOC | article | meta — collapses by breakpoint */}
+        <div className="mx-auto grid max-w-[1176px] grid-cols-1 items-start gap-8 md:grid-cols-[160px_minmax(0,1fr)] md:gap-10 xl:grid-cols-[180px_720px_180px] xl:gap-12">
+          {/* Left: TOC (hidden on mobile, used at md+) */}
+          <aside className="sticky top-6 hidden self-start md:block">
             <div className={`${META} text-sd-acid mb-3`}>// CONTENTS</div>
             <div>
               {headings.map((h) => {
@@ -561,7 +596,7 @@ export default function BlogPostRoute() {
                 )}
               </div>
 
-              <h1 className="mb-[22px] font-sd-display text-[76px] font-bold leading-[0.9] tracking-[-0.03em] text-sd-fg">
+              <h1 className="mb-[22px] font-sd-display text-[44px] font-bold leading-[0.92] tracking-[-0.03em] text-sd-fg md:text-[60px] md:leading-[0.9] xl:text-[76px]">
                 {post.title}
               </h1>
 
@@ -646,8 +681,8 @@ export default function BlogPostRoute() {
             )}
           </div>
 
-          {/* Right: meta sidebar */}
-          <aside className="sticky top-6 self-start">
+          {/* Right: meta sidebar (desktop only) */}
+          <aside className="sticky top-6 hidden self-start xl:block">
             <div className={`${META} text-sd-acid mb-3`}>// AUTHOR</div>
             <div className="flex items-center gap-3 border-y border-sd-rule2 py-3">
               <div className="flex h-10 w-10 items-center justify-center bg-sd-acid font-sd-display text-[18px] font-bold text-sd-bg">

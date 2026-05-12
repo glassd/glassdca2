@@ -89,25 +89,29 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="relative px-8 pt-12 pb-6">
+    <div className="relative px-[18px] pt-7 pb-6 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
       <div className="relative z-[2] mx-auto max-w-[1376px]">
         {/* Top meta strip */}
-        <div className="mb-9 flex items-center gap-[18px]">
+        <div className="mb-7 flex flex-wrap items-center gap-x-[18px] gap-y-2 md:mb-9">
           <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
             <span className="inline-block h-1.5 w-1.5 animate-sd-pulse rounded-full bg-sd-acid" />
             AVAILABLE NOW
           </span>
           <span className={META}>EST. 2024</span>
-          <div className="h-px flex-1 bg-sd-rule2" />
-          <span className={META}>FULL-STACK · IC · REMOTE-FIRST</span>
+          <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
+          <span className={`${META} hidden md:inline`}>
+            FULL-STACK · IC · REMOTE-FIRST
+          </span>
         </div>
 
         {/* Hero */}
         <div className="relative">
-          <span className={`${META} absolute left-0 top-2`}>
+          <span
+            className={`${META} block mb-2 md:absolute md:left-0 md:top-2 md:mb-0`}
+          >
             § 01 — INTRODUCTION
           </span>
-          <h1 className="mt-0 font-sd-display text-[120px] font-bold leading-[0.86] tracking-[-0.03em] text-sd-fg">
+          <h1 className="mt-0 font-sd-display text-[68px] font-bold leading-[0.88] tracking-[-0.03em] text-sd-fg md:text-[100px] md:leading-[0.86] xl:text-[144px]">
             DAVID
             <br />
             GLASS<span className="text-sd-acid">.</span>
@@ -115,8 +119,8 @@ export default function Home() {
         </div>
 
         {/* Subheading row */}
-        <div className="mt-9 grid grid-cols-[1fr_1fr_320px] items-end gap-10">
-          <h2 className="font-sd-display text-[32px] font-medium leading-[1.05] tracking-[-0.02em] text-sd-fg">
+        <div className="mt-7 grid grid-cols-1 items-end gap-7 md:mt-9 md:grid-cols-2 md:gap-8 xl:grid-cols-[1fr_1fr_320px] xl:gap-10">
+          <h2 className="font-sd-display text-[22px] font-medium leading-[1.1] tracking-[-0.02em] text-sd-fg md:text-[28px] md:leading-[1.05] xl:text-[32px]">
             Full-stack engineer
             <br />
             shipping{" "}
@@ -124,12 +128,12 @@ export default function Home() {
             <br />
             on the open web.
           </h2>
-          <p className="m-0 max-w-[380px] text-[14px] leading-[1.65] text-sd-dim">
+          <p className="m-0 max-w-[380px] text-[14px] leading-[1.65] text-sd-dim md:col-start-1 md:col-end-2 xl:col-start-2 xl:col-end-3">
             Ex-IT operator turned product builder, based in Toronto. I design
             and ship end-to-end web apps, write essays about AI &amp; systems,
             and care a lot about keeping things small.
           </p>
-          <div className="flex flex-col gap-[10px]">
+          <div className="flex flex-col gap-[10px] md:col-start-2 md:row-start-1 md:row-end-3 md:items-stretch md:justify-end xl:col-start-3">
             <Link
               to="/projects"
               className="inline-flex items-center justify-center bg-sd-acid px-[22px] py-[14px] font-sd-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-sd-bg no-underline transition-colors duration-150 hover:bg-sd-fg"
@@ -146,10 +150,10 @@ export default function Home() {
         </div>
 
         {/* Stats row */}
-        <div className="mt-16 grid grid-cols-4 gap-6 border-t border-sd-rule pt-[22px]">
+        <div className="mt-12 grid grid-cols-2 gap-6 border-t border-sd-rule pt-[22px] md:grid-cols-4 xl:mt-16">
           {STATS.map(([n, l]) => (
             <div key={l}>
-              <div className="font-sd-display text-[64px] font-bold leading-none text-sd-acid">
+              <div className="font-sd-display text-[44px] font-bold leading-none text-sd-acid md:text-[56px] xl:text-[64px]">
                 {n}
               </div>
               <div className={`${META} mt-2`}>{l}</div>
@@ -158,13 +162,13 @@ export default function Home() {
         </div>
 
         {/* Marquee */}
-        <div className="mt-9 -mx-8 overflow-hidden border-y border-sd-rule2">
+        <div className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8">
           <div className="flex animate-sd-marquee gap-12 whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
             {[...MARQUEE_TOKENS, ...MARQUEE_TOKENS].map((t, i) => (
               <span
                 key={`${t}-${i}`}
                 className={
-                  "shrink-0 font-sd-display text-[32px] font-semibold " +
+                  "shrink-0 font-sd-display text-[24px] font-semibold md:text-[28px] xl:text-[32px] " +
                   (i % 4 === 2 ? "text-sd-acid" : "text-sd-fg")
                 }
               >
@@ -188,7 +192,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {posts === null
               ? [0, 1, 2].map((i) => (
                   <DispatchSkeleton key={i} delay={i * 0.15} />

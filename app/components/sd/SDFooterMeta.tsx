@@ -17,12 +17,14 @@ export default function SDFooterMeta() {
   const { pathname } = useLocation();
 
   return (
-    <footer className="relative z-10 flex items-center gap-[18px] border-t border-sd-rule bg-sd-bg px-8 py-[10px]">
+    <footer className="relative z-10 flex flex-wrap items-center gap-x-[18px] gap-y-1 border-t border-sd-rule bg-sd-bg px-[18px] py-[10px] md:px-7 xl:px-8">
       <span className={META_CLASS}>
         <span className="text-sd-acid">●</span> ONLINE
       </span>
       <span className={META_CLASS}>{sectionLabel(pathname)}</span>
-      <span className={META_CLASS}>TORONTO · 43.65°N 79.38°W</span>
+      <span className={`${META_CLASS} hidden md:inline`}>
+        TORONTO · 43.65°N 79.38°W
+      </span>
       <span className="flex-1" />
       <span className={META_CLASS}>{pathname}</span>
     </footer>
