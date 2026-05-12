@@ -172,11 +172,20 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="mt-12 grid grid-cols-2 gap-6 border-t border-sd-rule pt-[22px] md:grid-cols-4 xl:mt-16">
+        {/* Stats row — hairline-divided cells keep the visual rhythm
+            even when individual values vary in width ("14 yrs" vs "∞").
+            Numbers use tabular-nums + whitespace-nowrap so they neither
+            re-flow nor visually shift as the digit counts change. */}
+        <div className="mt-12 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule md:grid-cols-4 xl:mt-16">
           {statRows.map(([n, l]) => (
-            <div key={l}>
-              <div className="font-sd-display text-[44px] font-bold leading-none text-sd-acid md:text-[56px] xl:text-[64px]">
+            <div
+              key={l}
+              className="flex flex-col bg-sd-bg px-4 py-5 md:px-5 md:py-6 xl:px-7 xl:py-7"
+            >
+              <div
+                className="whitespace-nowrap font-sd-display text-[40px] font-bold leading-none text-sd-acid md:text-[44px] xl:text-[64px]"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
                 {n}
               </div>
               <div className={`${META} mt-2`}>{l}</div>
