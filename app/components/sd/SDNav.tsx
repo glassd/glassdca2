@@ -88,17 +88,17 @@ export default function SDNav() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="ml-auto inline-flex h-9 w-9 items-center justify-center border border-sd-rule2 font-sd-mono text-[14px] text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid md:hidden"
+        className="ml-auto inline-flex h-10 w-10 items-center justify-center border border-sd-rule2 text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid md:hidden"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
       >
-        {open ? "✕" : "≡"}
+        {open ? <CloseIcon /> : <HamburgerIcon />}
       </button>
 
       {/* Mobile overlay */}
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col bg-sd-bg md:hidden">
-          <div className="flex items-center border-b border-sd-rule px-[18px] py-[14px]">
+          <div className="flex items-center border-b border-sd-rule2 px-[18px] py-[14px]">
             <Link
               to="/"
               className="flex items-center gap-[10px] font-sd-display text-[20px] font-bold tracking-[-0.04em] text-sd-fg"
@@ -115,30 +115,35 @@ export default function SDNav() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="ml-auto inline-flex h-9 w-9 items-center justify-center border border-sd-rule2 font-sd-mono text-[14px] text-sd-fg"
+              className="ml-auto inline-flex h-10 w-10 items-center justify-center border border-sd-rule2 text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid"
               aria-label="Close menu"
             >
-              ✕
+              <CloseIcon />
             </button>
           </div>
-          <ul className="flex flex-1 flex-col px-[18px] py-6">
+          <ul className="flex flex-1 flex-col border-t border-sd-rule2 px-[18px]">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.to, pathname);
               return (
                 <li
                   key={item.label}
-                  className="border-b border-sd-rule last:border-b-0"
+                  className="border-b border-sd-rule2"
                 >
                   <Link
                     to={item.to}
                     onClick={() => setOpen(false)}
                     className={
-                      "flex items-baseline gap-4 py-4 font-sd-display text-[28px] font-medium tracking-[-0.02em] " +
+                      "flex items-baseline gap-4 py-5 font-sd-display text-[32px] font-semibold tracking-[-0.02em] " +
                       (active ? "text-sd-acid" : "text-sd-fg")
                     }
                     aria-current={active ? "page" : undefined}
                   >
-                    <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
+                    <span
+                      className={
+                        "w-7 shrink-0 font-sd-mono text-[11px] uppercase tracking-[0.08em] " +
+                        (active ? "text-sd-acid" : "text-sd-faint")
+                      }
+                    >
                       {item.num}
                     </span>
                     {item.label}
@@ -150,12 +155,47 @@ export default function SDNav() {
           <Link
             to="/contact"
             onClick={() => setOpen(false)}
-            className="mx-[18px] mb-6 inline-flex items-center justify-center gap-2 bg-sd-acid px-4 py-[14px] font-sd-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-sd-bg"
+            className="m-[18px] inline-flex items-center justify-center gap-2 bg-sd-acid px-4 py-[14px] font-sd-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-sd-bg"
           >
             LET&apos;S TALK <span aria-hidden>↗</span>
           </Link>
         </div>
       )}
     </nav>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <svg
+      width="16"
+      height="14"
+      viewBox="0 0 16 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <line x1="0" y1="1" x2="16" y2="1" />
+      <line x1="0" y1="7" x2="16" y2="7" />
+      <line x1="0" y1="13" x2="16" y2="13" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <line x1="1" y1="1" x2="13" y2="13" />
+      <line x1="13" y1="1" x2="1" y2="13" />
+    </svg>
   );
 }
