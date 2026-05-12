@@ -69,16 +69,15 @@
     --sd-bg: #0a0a0a;
     --sd-panel: #111111;
     --sd-fg: #fafafa;
-    --sd-dim: #a3a3a3;
-    --sd-faint: #525252;
-    --sd-rule: #1f1f1f;
+    --sd-dim: #a8a8a8;
+    --sd-faint: #5a5a5a;
+    --sd-rule: #1a1a1a;
     --sd-rule2: #2a2a2a;
     --sd-acid: #d8ff3a;
-    --sd-acid-dim: #a4c425;
 
     /* Type families */
-    --sd-font-display: "Bricolage Grotesque", "Inter Display", Inter, sans-serif;
-    --sd-font-sans: "Geist", "Inter", -apple-system, sans-serif;
+    --sd-font-display: "Bricolage Grotesque", system-ui, sans-serif;
+    --sd-font-sans: "Geist", "Inter", system-ui, sans-serif;
     --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
   }
 

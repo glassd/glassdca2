@@ -21,13 +21,8 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         display: ["Space Grotesk", "system-ui", "sans-serif"],
-        "sd-display": [
-          "Bricolage Grotesque",
-          "Inter Display",
-          "Inter",
-          "sans-serif",
-        ],
-        "sd-sans": ["Geist", "Inter", "-apple-system", "sans-serif"],
+        "sd-display": ["Bricolage Grotesque", "system-ui", "sans-serif"],
+        "sd-sans": ["Geist", "Inter", "system-ui", "sans-serif"],
         "sd-mono": ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
@@ -83,7 +78,6 @@ export default {
           rule: "var(--sd-rule)",
           rule2: "var(--sd-rule2)",
           acid: "var(--sd-acid)",
-          "acid-dim": "var(--sd-acid-dim)",
         },
       },
       borderRadius: {
@@ -142,7 +136,7 @@ export default {
         float: "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         "gradient-x": "gradient-x 3s ease infinite",
-        "sd-marquee": "sd-marquee 28s linear infinite",
+        "sd-marquee": "sd-marquee 24s linear infinite",
         "sd-pulse": "sd-pulse 1.6s ease-in-out infinite",
       },
     },
