@@ -193,12 +193,12 @@ export default function Home() {
 
         {/* Marquee */}
         <div className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8">
-          <div className="flex w-max animate-sd-marquee gap-12 whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
+          <div className="flex w-max animate-sd-marquee whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
             {[...MARQUEE_TOKENS, ...MARQUEE_TOKENS].map((t, i) => (
               <span
                 key={`${t}-${i}`}
                 className={
-                  "shrink-0 font-sd-display text-[24px] font-semibold md:text-[28px] xl:text-[32px] " +
+                  "mr-12 shrink-0 font-sd-display text-[24px] font-semibold md:text-[28px] xl:text-[32px] " +
                   (i % 4 === 2 ? "text-sd-acid" : "text-sd-fg")
                 }
               >
