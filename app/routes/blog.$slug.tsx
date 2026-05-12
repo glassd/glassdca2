@@ -735,15 +735,17 @@ export default function BlogPostRoute() {
 
 function ShareButtons({ title, slug }: { title: string; slug: string }) {
   const [copied, setCopied] = useState(false);
-  const url =
-    typeof window !== "undefined"
-      ? window.location.href
-      : `${SITE_URL}/blog/${slug}`;
+  // Always derive share URLs from the canonical site URL so SSR and
+  // hydration produce identical href attributes. The clipboard "Copy
+  // link" action reads window.location at click time instead.
+  const url = `${SITE_URL}/blog/${slug}`;
 
   const onCopy = async () => {
     if (typeof navigator === "undefined") return;
+    const href =
+      typeof window !== "undefined" ? window.location.href : url;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Route } from "./+types/contact";
 import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
@@ -196,7 +197,15 @@ export default function Contact() {
   const data = useActionData<ActionData>();
   const nav = useNavigation();
   const sending = nav.state === "submitting";
-  const startedAt = Date.now();
+  // Initialize to 0 so SSR and the first client render match, then
+  // stamp the real timestamp once the form has been rendered to the
+  // user. The action treats a value of 0 as "too fast" but the
+  // useEffect runs synchronously after mount, before any user
+  // submit, so by the time the form is interactive startedAt is set.
+  const [startedAt, setStartedAt] = useState(0);
+  useEffect(() => {
+    setStartedAt(Date.now());
+  }, []);
 
   return (
     <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
