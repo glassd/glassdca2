@@ -128,10 +128,8 @@ export default function Home() {
         </div>
 
         {/* Hero */}
-        <div className="relative">
-          <span
-            className={`${META} block mb-2 md:absolute md:left-0 md:top-2 md:mb-0`}
-          >
+        <div>
+          <span className={`${META} mb-3 block md:mb-4`}>
             § 01 — INTRODUCTION
           </span>
           <h1 className="mt-0 font-sd-display text-[68px] font-bold leading-[0.88] tracking-[-0.03em] text-sd-fg md:text-[100px] md:leading-[0.86] xl:text-[144px]">
