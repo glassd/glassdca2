@@ -4,100 +4,137 @@ import { seoMeta } from "~/lib/seo";
 export function meta({}: Route.MetaArgs) {
   return seoMeta({
     title: "About Me - David Glass",
-    description: "Learn more about David Glass, a full-stack developer passionate about building software and exploring technology.",
+    description:
+      "Learn more about David Glass, a full-stack developer passionate about building software and exploring technology.",
     url: "/about",
   });
 }
 
+const META =
+  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+const META_ACID =
+  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+
+const TIMELINE: Array<[string, string]> = [
+  ["2011", "Started CS degree."],
+  ["2015", 'Took the first "real" job — in IT, not dev.'],
+  ["2018", "Promoted into systems & network ops."],
+  ["2023", "Quit ops. Started writing software again, full-time."],
+  ["2024", "Launched glassd.ca · v1."],
+  ["2026", "Rebuilt the site from scratch. You are here."],
+];
+
+const ELSEWHERE: Array<{ label: string; href: string }> = [
+  { label: "GITHUB / GLASSD ↗", href: "https://github.com/glassd" },
+  { label: "TWITTER / @DAGLASSD ↗", href: "https://x.com/daglassd" },
+  {
+    label: "LINKEDIN / /IN/GLASSD ↗",
+    href: "https://www.linkedin.com/in/glassd",
+  },
+  {
+    label: "EMAIL — HELLO@GLASSD.CA ↗",
+    href: "mailto:hello@glassd.ca",
+  },
+];
+
 export default function About() {
   return (
-    <div className="container mx-auto px-4 py-24 max-w-3xl">
-      <section>
-        <h1 className="text-4xl font-bold text-foreground mb-6">
-          About Me
+    <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
+      <div className="relative z-[2] mx-auto max-w-[1176px]">
+        {/* Section label */}
+        <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
+          <span className={META}>§ 02 — ON THE AUTHOR</span>
+          <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
+          <span className={META}>6 MIN · UPDATED 2026.05</span>
+        </div>
+
+        {/* Hero */}
+        <h1 className="mb-10 font-sd-display text-[56px] font-bold leading-[0.92] tracking-[-0.03em] text-sd-fg md:mb-14 md:text-[88px] md:leading-[0.88] xl:text-[132px]">
+          JUST LIKES
+          <br />
+          BUILDING
+          <br />
+          <span className="text-sd-acid">
+            THINGS<span className="text-sd-fg">.</span>
+          </span>
         </h1>
-        <p className="text-lg text-muted-foreground">
-          I'm a tech nerd at heart who just likes building things.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          For a long time, I was happy enough to show up, do my job, and go
-          home. Lately, that doesn't feel like enough. The world's changing too
-          fast to just sit in the passenger seat, so this is me trying to get
-          back behind the wheel.
-        </p>
-      </section>
 
-      <section className="mt-8">
-        <h2 className="text-2xl font-semibold text-foreground mb-4">
-          Professional History
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          I went to school for software development, fully expecting to write
-          code for a living. Like most plans, that didn't quite survive contact
-          with reality.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          Instead, I ended up in IT, managing systems, building networks, and
-          keeping other people's stuff running. It wasn't what I pictured, but
-          it taught me a lot about how things actually work in the real world
-          and how they break.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          A couple of years ago, I finally made the jump back to what I really
-          wanted to do: building software. That's what led to this site. This is
-          where I'm going to put the things I'm working on and think out loud
-          about the stuff that interests me.
-        </p>
-      </section>
+        {/* Body: bio + aside */}
+        <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-[1fr_320px] md:gap-16 xl:gap-[64px]">
+          {/* Bio */}
+          <div className="text-[15px] leading-[1.7] text-sd-dim md:text-[17px]">
+            <p className="m-0">
+              <span className="font-medium text-sd-fg">
+                For a long time, I was happy enough to show up, do my job, and
+                go home.
+              </span>{" "}
+              Lately, that doesn&apos;t feel like enough. The world&apos;s
+              changing too fast to just sit in the passenger seat, so this is
+              me trying to get back behind the wheel.
+            </p>
+            <p className="my-[22px]">
+              I went to school for software development, fully expecting to
+              write code for a living. Like most plans, that didn&apos;t quite
+              survive contact with reality. I ended up in IT, managing systems,
+              building networks, and keeping other people&apos;s stuff running.
+            </p>
+            <p className="my-[22px]">
+              A couple of years ago I made the jump back to what I really
+              wanted to do: building software. That&apos;s what led to this
+              site.
+            </p>
+            <p className="my-[22px]">
+              I&apos;m especially interested in AI right now — how it can
+              actually be useful, where it goes off the rails, and what it
+              means for the way we work and live. I&apos;ll keep building,
+              breaking things, and writing about what I learn.
+            </p>
+          </div>
 
-      <section className="mt-8">
-        <h2 className="text-2xl font-semibold text-foreground mb-4">
-          What I'm Building Now
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          Right now, the main project is this website.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          I want this to be a place where I can dump research, ideas,
-          experiments, and whatever else I'm into at the moment, without it
-          turning into a complete mess. That means I'm not just writing; I'm
-          also figuring out how to structure everything so it stays usable as it
-          grows.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          I'm especially interested in AI at the moment, how it can actually be
-          useful, where it goes off the rails, and what it means for the way we
-          work and live. I'll be sharing my own experiments and thoughts as I
-          go, the good and the bad.
-        </p>
-      </section>
+          {/* Aside: timeline + elsewhere */}
+          <aside className="md:border-l md:border-sd-rule2 md:pl-7 xl:pl-7">
+            <div className={`${META_ACID} mb-4`}>// TIMELINE</div>
+            <ol className="m-0 list-none p-0">
+              {TIMELINE.map(([y, t], i) => (
+                <li
+                  key={y}
+                  className={
+                    "grid grid-cols-[60px_1fr] items-baseline gap-4 py-2.5 " +
+                    (i === 0 ? "" : "border-t border-sd-rule")
+                  }
+                >
+                  <span
+                    className={`font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid`}
+                  >
+                    {y}
+                  </span>
+                  <span className="text-[14px] text-sd-fg">{t}</span>
+                </li>
+              ))}
+            </ol>
 
-      <section className="mt-8">
-        <h2 className="text-2xl font-semibold text-foreground mb-4">
-          Other Things That Interest Me
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          I'm not just staring at code and AI all day.
-        </p>
-        <p className="text-lg text-muted-foreground">
-          I care a lot about how we live inside all this technology, how we
-          treat our bodies and our brains, how we stay sane, and how we spend
-          our time. You'll probably see me writing about health and wellness,
-          fitness, video games, meditation, and psychology. Sometimes it'll just
-          be me exploring something new. Other times I'll be trying to nudge
-          people, including myself, to take certain things a bit more seriously.
-        </p>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-2xl font-semibold text-foreground mb-4">
-          If You Made It This Far
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          If any of this sounds interesting, stick around. I'll keep building,
-          breaking things, and writing about what I learn here.
-        </p>
-      </section>
+            <div className={`${META_ACID} mb-3.5 mt-8`}>// ELSEWHERE</div>
+            <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+              {ELSEWHERE.map((it) => (
+                <li key={it.label}>
+                  <a
+                    href={it.href}
+                    target={it.href.startsWith("http") ? "_blank" : undefined}
+                    rel={
+                      it.href.startsWith("http")
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
+                    className="block border border-sd-rule2 px-2.5 py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+                  >
+                    {it.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }
