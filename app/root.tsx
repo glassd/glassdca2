@@ -1,5 +1,6 @@
 import {
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
   Outlet,
@@ -21,15 +22,11 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.gstatic.com",
     crossOrigin: "anonymous",
   },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta
@@ -63,30 +60,77 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
+  let status: string | number = "ERROR";
+  let title = "Something broke.";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
+    status = error.status;
+    if (error.status === 404) {
+      title = "Page not found.";
+      details =
+        "The page you were looking for doesn't exist — or it moved without telling anyone.";
+    } else {
+      title = error.statusText || "Something broke.";
+      details = error.statusText || details;
+    }
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
+    <div className="relative flex min-h-screen flex-col bg-sd-bg text-sd-fg">
+      <SDGrid />
+      <SDNav />
+      <main className="relative z-[1] grow px-[18px] pb-6 pt-12 md:px-7 md:pt-16 xl:px-8 xl:pt-20">
+        <div className="relative z-[2] mx-auto max-w-[1176px]">
+          <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
+            <span className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint">
+              § {String(status)} — FAULT
+            </span>
+            <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
+            <span className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint">
+              STAY CALM
+            </span>
+          </div>
+
+          <h1 className="mb-6 font-sd-display text-[56px] font-bold leading-[0.92] tracking-[-0.03em] text-sd-fg md:text-[88px] xl:text-[120px]">
+            {String(status)}
+            <span className="text-sd-acid">.</span>
+          </h1>
+
+          <p className="mb-3 max-w-[680px] font-sd-display text-[20px] font-medium leading-[1.3] text-sd-fg md:text-[24px]">
+            {title}
+          </p>
+          <p className="mb-10 max-w-[680px] text-[15px] leading-[1.65] text-sd-dim md:text-[16px]">
+            {details}
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center justify-center bg-sd-acid px-[22px] py-[14px] font-sd-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-sd-bg transition-colors duration-150 hover:bg-sd-fg"
+            >
+              BACK TO HOME ↗
+            </Link>
+            <Link
+              to="/blog"
+              className="inline-flex items-center justify-center border border-sd-fg bg-transparent px-[22px] py-[14px] font-sd-mono text-[12px] uppercase tracking-[0.08em] text-sd-fg transition-colors duration-150 hover:bg-sd-fg hover:text-sd-bg"
+            >
+              READ THE BLOG
+            </Link>
+          </div>
+
+          {stack && (
+            <pre className="mt-10 w-full overflow-x-auto border border-sd-rule2 bg-sd-panel p-5 font-sd-mono text-[12px] leading-[1.55] text-sd-dim">
+              <code>{stack}</code>
+            </pre>
+          )}
+        </div>
+      </main>
+      <SDFooterMeta />
+    </div>
   );
 }

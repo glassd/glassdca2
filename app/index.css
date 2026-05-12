@@ -1,71 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@10..48,400;10..48,500;10..48,600;10..48,700;10..48,800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,400;10..48,500;10..48,600;10..48,700;10..48,800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @config "../tailwind.config.ts";
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 25% 10%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
-
-    --primary: 250 85% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 15% 92%;
-    --secondary-foreground: 220 25% 10%;
-
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 45%;
-
-    --accent: 170 80% 45%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 250 85% 60%;
-
-    --radius: 0.75rem;
-
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(
-      135deg,
-      hsl(250, 85%, 60%) 0%,
-      hsl(280, 85%, 55%) 50%,
-      hsl(320, 80%, 55%) 100%
-    );
-    --gradient-hero: linear-gradient(
-      135deg,
-      hsl(220, 25%, 10%) 0%,
-      hsl(240, 20%, 15%) 100%
-    );
-    --gradient-card: linear-gradient(
-      145deg,
-      hsl(0, 0%, 100%) 0%,
-      hsl(220, 20%, 98%) 100%
-    );
-    --glow-primary: 0 0 60px hsl(250 85% 60% / 0.3);
-    --glow-accent: 0 0 40px hsl(170 80% 45% / 0.3);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 250 85% 60%;
-
     /* ─── Direction C "System Diagram" tokens ─── */
-    /* Color */
     --sd-bg: #0a0a0a;
     --sd-panel: #111111;
     --sd-fg: #fafafa;
@@ -75,80 +15,17 @@
     --sd-rule2: #2a2a2a;
     --sd-acid: #d8ff3a;
 
-    /* Type families */
     --sd-font-display: "Bricolage Grotesque", system-ui, sans-serif;
     --sd-font-sans: "Geist", "Inter", system-ui, sans-serif;
     --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
   }
 
-  .dark {
-    --background: 225 25% 6%;
-    --foreground: 220 15% 95%;
-
-    --card: 225 20% 10%;
-    --card-foreground: 220 15% 95%;
-
-    --popover: 225 20% 10%;
-    --popover-foreground: 220 15% 95%;
-
-    --primary: 250 85% 65%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 225 15% 15%;
-    --secondary-foreground: 220 15% 95%;
-
-    --muted: 225 15% 15%;
-    --muted-foreground: 220 10% 55%;
-
-    --accent: 170 80% 50%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 225 15% 18%;
-    --input: 225 15% 18%;
-    --ring: 250 85% 65%;
-
-    /* Custom tokens - dark */
-    --gradient-primary: linear-gradient(
-      135deg,
-      hsl(250, 85%, 65%) 0%,
-      hsl(280, 80%, 60%) 50%,
-      hsl(320, 75%, 60%) 100%
-    );
-    --gradient-hero: linear-gradient(
-      135deg,
-      hsl(225, 25%, 6%) 0%,
-      hsl(240, 20%, 12%) 100%
-    );
-    --gradient-card: linear-gradient(
-      145deg,
-      hsl(225, 20%, 12%) 0%,
-      hsl(225, 20%, 8%) 100%
-    );
-    --glow-primary: 0 0 80px hsl(250 85% 65% / 0.25);
-    --glow-accent: 0 0 50px hsl(170 80% 50% / 0.2);
-
-    --sidebar-background: 225 20% 8%;
-    --sidebar-foreground: 220 15% 90%;
-    --sidebar-primary: 250 85% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 15% 15%;
-    --sidebar-accent-foreground: 220 15% 90%;
-    --sidebar-border: 225 15% 18%;
-    --sidebar-ring: 250 85% 65%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
   html,
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    background-color: var(--sd-bg);
+    color: var(--sd-fg);
+    font-family: var(--sd-font-sans);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1,
@@ -157,7 +34,7 @@
   h4,
   h5,
   h6 {
-    @apply font-display;
+    font-family: var(--sd-font-display);
   }
 }
 
@@ -356,38 +233,5 @@
     font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-}
-
-@layer utilities {
-  .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .gradient-bg {
-    background: var(--gradient-primary);
-  }
-
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-
-  .gradient-card {
-    background: var(--gradient-card);
-  }
-
-  .glow-primary {
-    box-shadow: var(--glow-primary);
-  }
-
-  .glow-accent {
-    box-shadow: var(--glow-accent);
-  }
-
-  .text-balance {
-    text-wrap: balance;
   }
 }
