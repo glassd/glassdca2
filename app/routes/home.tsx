@@ -59,12 +59,24 @@ const MARQUEE_TOKENS = [
   "BUILD WEIRD STUFF",
 ];
 
-const STATS: Array<[string, string]> = [
-  ["14 yrs", "BUILDING SOFTWARE"],
-  ["08", "SHIPPED PROJECTS"],
-  ["47", "ESSAYS PUBLISHED"],
-  ["∞", "CUPS OF COFFEE"],
-];
+type Stats = {
+  years: number;
+  projects: number;
+  posts: number;
+};
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function buildStats(s: Stats | null): Array<[string, string]> {
+  return [
+    [s ? `${s.years} yrs` : "—", "BUILDING SOFTWARE"],
+    [s ? pad2(s.projects) : "—", "SHIPPED PROJECTS"],
+    [s ? pad2(s.posts) : "—", "ESSAYS PUBLISHED"],
+    ["∞", "CUPS OF COFFEE"],
+  ];
+}
 
 function formatDispatchDate(iso?: string | null) {
   if (!iso) return null;
@@ -78,6 +90,7 @@ function formatDispatchDate(iso?: string | null) {
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[] | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     fetch("/api/blog/latest")
@@ -86,7 +99,17 @@ export default function Home() {
       .catch((err) =>
         console.error("[Home] Failed to fetch latest posts:", err),
       );
+    fetch("/api/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.years === "number") setStats(data);
+      })
+      .catch((err) =>
+        console.error("[Home] Failed to fetch stats:", err),
+      );
   }, []);
+
+  const statRows = buildStats(stats);
 
   return (
     <div className="relative px-[18px] pt-7 pb-6 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
@@ -151,7 +174,7 @@ export default function Home() {
 
         {/* Stats row */}
         <div className="mt-12 grid grid-cols-2 gap-6 border-t border-sd-rule pt-[22px] md:grid-cols-4 xl:mt-16">
-          {STATS.map(([n, l]) => (
+          {statRows.map(([n, l]) => (
             <div key={l}>
               <div className="font-sd-display text-[44px] font-bold leading-none text-sd-acid md:text-[56px] xl:text-[64px]">
                 {n}
