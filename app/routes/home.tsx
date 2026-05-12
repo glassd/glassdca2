@@ -193,7 +193,7 @@ export default function Home() {
 
         {/* Marquee */}
         <div className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8">
-          <div className="flex animate-sd-marquee gap-12 whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
+          <div className="flex w-max animate-sd-marquee gap-12 whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
             {[...MARQUEE_TOKENS, ...MARQUEE_TOKENS].map((t, i) => (
               <span
                 key={`${t}-${i}`}
