@@ -6,7 +6,22 @@ import { urlFor } from "../lib/sanity";
 import { SITE_URL, SITE_NAME, TWITTER_HANDLE } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeSanitize from "rehype-sanitize";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeHighlight from "rehype-highlight";
+import { remarkMark } from "../lib/remark-mark";
+
+// Allow rehype-highlight's token classes (hljs / hljs-*) plus the
+// language-* class through the sanitizer, and add <mark> to the
+// allowed tag names so the ==marked== remark plugin's output survives.
+const POST_SCHEMA = {
+  ...defaultSchema,
+  tagNames: [...((defaultSchema.tagNames as string[]) || []), "mark"],
+  attributes: {
+    ...defaultSchema.attributes,
+    code: [["className", /^language-./, "hljs", /^hljs-/]],
+    span: [["className", "hljs", /^hljs-/]],
+  },
+};
 
 type Tag = {
   _id: string;
@@ -630,8 +645,11 @@ export default function BlogPostRoute() {
             <article ref={articleRef} className="sd-post-body">
               {post.bodyMarkdown ? (
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeSanitize]}
+                  remarkPlugins={[remarkGfm, remarkMark]}
+                  rehypePlugins={[
+                    rehypeHighlight,
+                    [rehypeSanitize, POST_SCHEMA],
+                  ]}
                   components={mdComponents as any}
                 >
                   {post.bodyMarkdown}
