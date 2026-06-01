@@ -140,7 +140,7 @@ export default function Home() {
         </div>
 
         {/* Subheading row */}
-        <div className="mt-7 grid grid-cols-1 items-end gap-7 md:mt-9 md:grid-cols-2 md:gap-8 xl:grid-cols-[1fr_1fr_320px] xl:gap-10">
+        <div className="mt-7 grid grid-cols-1 items-end gap-7 md:mt-9 md:grid-cols-[1fr_minmax(220px,280px)] md:gap-8 xl:grid-cols-[1.1fr_1fr_minmax(260px,320px)] xl:gap-10">
           <h2 className="font-sd-display text-[22px] font-medium leading-[1.1] tracking-[-0.02em] text-sd-fg md:text-[28px] md:leading-[1.05] xl:text-[32px]">
             Full-stack engineer
             <br />
@@ -191,8 +191,19 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Marquee */}
-        <div className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8">
+        {/* Marquee — edges fade to bg so the loop has no visible seam,
+            especially on wide / ultrawide where the content reveals
+            empty space at the wrap point. Fade width is a % of the
+            track so it scales naturally up through ultrawide. */}
+        <div
+          className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%)",
+          }}
+        >
           <div className="flex w-max animate-sd-marquee whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
             {[...MARQUEE_TOKENS, ...MARQUEE_TOKENS].map((t, i) => (
               <span

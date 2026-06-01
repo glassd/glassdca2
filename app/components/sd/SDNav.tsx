@@ -34,10 +34,10 @@ export default function SDNav() {
   }, [open]);
 
   return (
-    <nav className="relative z-10 flex items-center border-b border-sd-rule bg-sd-bg px-[18px] py-[14px] md:px-7 md:py-4 xl:px-8 xl:py-[18px]">
+    <nav className="relative z-10 flex items-center gap-3 border-b border-sd-rule bg-sd-bg px-[18px] py-[14px] md:gap-5 md:px-7 md:py-4 xl:px-8 xl:py-[18px]">
       <Link
         to="/"
-        className="flex items-center gap-[10px] font-sd-display text-[20px] font-bold tracking-[-0.04em] text-sd-fg md:text-[22px]"
+        className="flex shrink-0 items-center gap-[10px] font-sd-display text-[20px] font-bold tracking-[-0.04em] text-sd-fg md:text-[22px]"
       >
         <span aria-hidden className="inline-block h-[10px] w-[10px] bg-sd-acid" />
         <span>
@@ -46,7 +46,7 @@ export default function SDNav() {
       </Link>
 
       {/* Desktop / tablet nav links */}
-      <ul className="ml-7 hidden gap-1 md:flex xl:ml-14">
+      <ul className="ml-2 hidden flex-wrap gap-1 md:flex lg:ml-7 xl:ml-14">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.to, pathname);
           return (
@@ -54,7 +54,7 @@ export default function SDNav() {
               <Link
                 to={item.to}
                 className={
-                  "inline-flex items-center px-2.5 py-1.5 font-sd-mono text-[12px] uppercase tracking-[0.05em] transition-colors duration-150 xl:px-3 xl:text-[13px] " +
+                  "inline-flex items-center whitespace-nowrap px-2 py-1.5 font-sd-mono text-[11px] uppercase tracking-[0.05em] transition-colors duration-150 lg:px-2.5 lg:text-[12px] xl:px-3 xl:text-[13px] " +
                   (active
                     ? "bg-sd-acid text-sd-bg"
                     : "text-sd-dim hover:text-sd-fg")
@@ -79,7 +79,7 @@ export default function SDNav() {
       {/* Desktop / tablet CTA */}
       <Link
         to="/contact"
-        className="ml-auto hidden items-center gap-2 bg-sd-acid px-4 py-[9px] font-sd-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sd-bg transition-colors duration-150 hover:bg-sd-fg md:inline-flex"
+        className="ml-auto hidden shrink-0 items-center gap-2 whitespace-nowrap bg-sd-acid px-3 py-[9px] font-sd-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-sd-bg transition-colors duration-150 hover:bg-sd-fg md:inline-flex lg:px-4"
       >
         LET&apos;S TALK <span aria-hidden>↗</span>
       </Link>
