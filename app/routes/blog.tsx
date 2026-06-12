@@ -3,14 +3,59 @@ import { Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import { seoMeta } from "~/lib/seo";
 import { urlFor } from "~/lib/sanity";
+import { listPosts, listTags } from "~/lib/queries.server";
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return seoMeta({
     title: "Blog - David Glass",
     description:
       "Read my latest blog posts on software development, AI, technology, and more.",
     url: "/blog",
   });
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const q = (url.searchParams.get("q") || "").trim();
+  const tagSlugs = (url.searchParams.get("tags") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  try {
+    const [page, tags] = await Promise.all([
+      listPosts({ offset: 0, limit: PAGE_SIZE, q, tagSlugs }),
+      listTags(),
+    ]);
+    return { ...page, tags, error: null };
+  } catch (error: any) {
+    console.error("[Blog] Failed to load posts:", {
+      message: error?.message || String(error),
+    });
+    return {
+      posts: [],
+      nextOffset: 0,
+      hasMore: false,
+      total: 0,
+      tags: [],
+      error: error?.message || "Unknown error",
+    };
+  }
+}
+
+// Search and tag filtering re-fetch from /api/blog client-side; a
+// search-param-only navigation must not re-run the loader on top of it.
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}: {
+  currentUrl: URL;
+  nextUrl: URL;
+  defaultShouldRevalidate: boolean;
+}) {
+  if (currentUrl.pathname === nextUrl.pathname) return false;
+  return defaultShouldRevalidate;
 }
 
 type Tag = {
@@ -53,7 +98,7 @@ function readMinutes(snippet?: string | null) {
   return Math.max(2, Math.min(15, Math.round((words / 200) * 60)));
 }
 
-function BlogContent() {
+function BlogContent({ initial }: { initial: Route.ComponentProps["loaderData"] }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQ = searchParams.get("q") || "";
@@ -61,18 +106,18 @@ function BlogContent() {
     .split(",")
     .filter(Boolean);
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [nextOffset, setNextOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [posts, setPosts] = useState<Post[]>(initial.posts);
+  const [nextOffset, setNextOffset] = useState(initial.nextOffset);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(initial.error);
 
-  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [availableTags] = useState<Tag[]>(initial.tags);
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
   const [q, setQ] = useState(initialQ);
   const [debouncedQ, setDebouncedQ] = useState(initialQ);
 
-  const initialLoadDone = useRef(false);
+  const firstRender = useRef(true);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -81,43 +126,6 @@ function BlogContent() {
     const handle = setTimeout(() => setDebouncedQ(q.trim()), 350);
     return () => clearTimeout(handle);
   }, [q]);
-
-  // Initial load
-  useEffect(() => {
-    let cancelled = false;
-
-    const params = new URLSearchParams();
-    params.set("offset", "0");
-    params.set("limit", String(PAGE_SIZE));
-    if (initialQ) params.set("q", initialQ);
-    if (initialTags.length > 0) params.set("tags", initialTags.join(","));
-
-    Promise.all([
-      fetch(`/api/blog?${params.toString()}`).then((r) => r.json()),
-      fetch("/api/blog/tags").then((r) => r.json()),
-    ])
-      .then(([blogData, tagsData]) => {
-        if (cancelled) return;
-        setPosts(blogData.posts);
-        setNextOffset(blogData.nextOffset);
-        setHasMore(blogData.hasMore);
-        setAvailableTags(tagsData);
-        setLoading(false);
-        initialLoadDone.current = true;
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error("[Blog] Initial fetch failed:", err);
-        setError(err?.message || "Unknown error");
-        setLoading(false);
-        initialLoadDone.current = true;
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -156,9 +164,12 @@ function BlogContent() {
     }
   };
 
-  // Filter changes (after initial load)
+  // Filter changes (initial page comes from the loader)
   useEffect(() => {
-    if (!initialLoadDone.current) return;
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
 
     let cancelled = false;
 
@@ -186,8 +197,7 @@ function BlogContent() {
         console.error("[Blog] Error fetching posts:", msg);
         setError(msg);
       } finally {
-        if (cancelled) return;
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -220,8 +230,10 @@ function BlogContent() {
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
     };
+    // The sentinel div renders unconditionally, so the ref is stable;
+    // re-observe only when the query context changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sentinelRef.current, queryString, hasMore]);
+  }, [queryString, hasMore]);
 
   const toggleTag = (slug: string) => {
     setSelectedTags((prev) =>
@@ -374,7 +386,7 @@ function FeaturedPost({
         {cover ? (
           <img
             src={cover}
-            alt={post.title}
+            alt={post.mainImage?.alt || post.title}
             className="h-full w-full object-cover"
             loading="lazy"
           />
@@ -487,7 +499,7 @@ function PostRow({
   );
 }
 
-export default function Blog() {
+export default function Blog({ loaderData }: Route.ComponentProps) {
   return (
     <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
       <div className="relative z-[2] mx-auto max-w-[1176px]">
@@ -503,7 +515,7 @@ export default function Blog() {
           WRITING<span className="text-sd-acid">/</span>
         </h1>
 
-        <BlogContent />
+        <BlogContent initial={loaderData} />
       </div>
     </div>
   );

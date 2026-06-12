@@ -2,7 +2,7 @@ import type { Route } from "./+types/contact.sent";
 import { seoMeta } from "~/lib/seo";
 import { Link } from "react-router";
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return [
     ...seoMeta({
       title: "Message Sent - David Glass",

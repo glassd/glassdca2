@@ -1,4 +1,4 @@
-export const SITE_URL = "https://www.glassd.ca";
+export const SITE_URL = "https://glassd.ca";
 export const SITE_NAME = "David Glass";
 export const TWITTER_HANDLE = "@daglassd";
 
@@ -10,8 +10,11 @@ type SeoMetaOptions = {
   type?: string;
 };
 
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+
 export function seoMeta({ title, description, url, ogImage, type = "website" }: SeoMetaOptions) {
   const canonical = `${SITE_URL}${url}`;
+  const image = ogImage || DEFAULT_OG_IMAGE;
   const meta: any[] = [
     { title },
     { name: "description", content: description },
@@ -25,12 +28,9 @@ export function seoMeta({ title, description, url, ogImage, type = "website" }: 
     { name: "twitter:site", content: TWITTER_HANDLE },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
+    { property: "og:image", content: image },
+    { name: "twitter:image", content: image },
   ];
-
-  if (ogImage) {
-    meta.push({ property: "og:image", content: ogImage });
-    meta.push({ name: "twitter:image", content: ogImage });
-  }
 
   return meta;
 }

@@ -32,12 +32,24 @@ export default defineType({
       options: {
         hotspot: true,
       },
+      fields: [
+        defineField({
+          name: 'alt',
+          title: 'Alternative text',
+          type: 'string',
+          description: 'Describes the image for screen readers and SEO.',
+        }),
+      ],
     }),
+    // Legacy field — tags replaced categories. Hidden until content is
+    // confirmed migrated, then it can be deleted outright.
     defineField({
       name: 'categories',
-      title: 'Categories',
+      title: 'Categories (legacy)',
       type: 'array',
       of: [{type: 'reference', to: {type: 'category'}}],
+      hidden: true,
+      readOnly: true,
     }),
     defineField({
       name: 'publishedAt',
@@ -64,11 +76,14 @@ export default defineType({
       rows: 3,
       description: 'Short summary for lists; if empty, a snippet will be generated.',
     }),
-    // Legacy body retained for compatibility
+    // Legacy body retained for compatibility — the site renders
+    // bodyMarkdown only. Hidden until content is confirmed migrated.
     defineField({
       name: 'body',
-      title: 'Body',
+      title: 'Body (legacy)',
       type: 'blockContent',
+      hidden: true,
+      readOnly: true,
     }),
   ],
 

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Route } from "./+types/projects";
 import { seoMeta } from "~/lib/seo";
 import { urlFor } from "../lib/sanity";
+import { listProjects } from "~/lib/queries.server";
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return seoMeta({
     title: "Projects - David Glass",
     description:
@@ -18,6 +19,7 @@ type Project = {
   slug: { current: string };
   mainImage?: any;
   description?: string;
+  stack?: string[];
   liveUrl?: string;
   githubUrl?: string;
   publishedAt?: string;
@@ -45,28 +47,22 @@ function deriveStatus(p: Project): {
   return { label: "ARCHIVED", color: "text-sd-faint border-sd-faint" };
 }
 
-export default function Projects() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export async function loader() {
+  try {
+    const projects = await listProjects();
+    return { projects: Array.isArray(projects) ? projects : [], error: null };
+  } catch (error: any) {
+    console.error("[Projects] Failed to load:", {
+      message: error?.message || String(error),
+    });
+    return { projects: [], error: error?.message || "Unknown error" };
+  }
+}
 
-  useEffect(() => {
-    fetch("/api/projects")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setProjects(data);
-        else setProjects([]);
-      })
-      .catch((err) => {
-        console.error("[Projects] Failed to fetch:", err);
-        setError(err?.message || "Unknown error");
-        setProjects([]);
-      });
-  }, []);
+export default function Projects({ loaderData }: Route.ComponentProps) {
+  const { projects, error } = loaderData;
 
-  const count = projects?.length ?? 0;
+  const count = projects.length;
 
   return (
     <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
@@ -87,9 +83,7 @@ export default function Projects() {
           BUILT<span className="text-sd-acid">.</span>
         </h1>
 
-        {projects === null ? (
-          <SkeletonGrid />
-        ) : projects.length === 0 ? (
+        {projects.length === 0 ? (
           <div className="grid place-items-center border border-sd-rule2 py-16 text-center">
             <span className={META}>
               {error ? `LOAD FAILED — ${error.toUpperCase()}` : "NO PROJECTS YET"}
@@ -97,7 +91,7 @@ export default function Projects() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule xl:grid-cols-2">
-            {projects.map((p, i) => (
+            {projects.map((p: Project, i: number) => (
               <ProjectCard key={p._id} project={p} index={i} />
             ))}
           </div>
@@ -129,7 +123,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         {cover ? (
           <img
             src={cover}
-            alt={project.title}
+            alt={project.mainImage?.alt || project.title}
             loading="lazy"
             className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
           />
@@ -138,9 +132,6 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         )}
         <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
           FIG. {fig}
-        </span>
-        <span className="absolute right-2.5 top-2.5 z-10 border border-sd-rule2 bg-sd-bg/80 px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
-          FROM CMS
         </span>
       </div>
 
@@ -168,6 +159,19 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <p className="mt-5 line-clamp-4 text-[14px] leading-[1.6] text-sd-dim md:text-[15px]">
             {project.description}
           </p>
+        )}
+
+        {project.stack && project.stack.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {project.stack.map((s) => (
+              <span
+                key={s}
+                className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
         )}
 
         <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-6">
@@ -225,35 +229,6 @@ function DiagonalStripePattern() {
       </defs>
       <rect width="400" height="250" fill="url(#sd-stripe)" />
     </svg>
-  );
-}
-
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule xl:grid-cols-2">
-      {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="flex flex-col bg-sd-bg p-5 md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7"
-        >
-          <div className="aspect-[16/10] w-full animate-pulse bg-sd-panel md:w-[220px] md:shrink-0 md:self-start xl:w-full" />
-          <div className="mt-5 flex flex-1 flex-col gap-3 md:mt-0 xl:mt-6">
-            <div className="flex gap-3">
-              <div className="h-3 w-12 animate-pulse bg-sd-rule" />
-              <div className="h-3 w-10 animate-pulse bg-sd-rule" />
-              <span className="flex-1" />
-              <div className="h-4 w-14 animate-pulse bg-sd-rule" />
-            </div>
-            <div className="h-9 w-3/4 animate-pulse bg-sd-rule" />
-            <div className="space-y-2 pt-2">
-              <div className="h-3 w-full animate-pulse bg-sd-rule" />
-              <div className="h-3 w-5/6 animate-pulse bg-sd-rule" />
-              <div className="h-3 w-3/4 animate-pulse bg-sd-rule" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 

@@ -5,9 +5,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sd-display": ["Bricolage Grotesque", "system-ui", "sans-serif"],
-        "sd-sans": ["Geist", "Inter", "system-ui", "sans-serif"],
-        "sd-mono": ["JetBrains Mono", "ui-monospace", "monospace"],
+        "sd-display": ["Bricolage Grotesque Variable", "system-ui", "sans-serif"],
+        "sd-sans": ["Geist Variable", "system-ui", "sans-serif"],
+        "sd-mono": ["JetBrains Mono Variable", "ui-monospace", "monospace"],
       },
       colors: {
         sd: {

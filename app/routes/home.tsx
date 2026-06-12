@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { seoMeta, SITE_URL, SITE_NAME } from "~/lib/seo";
-import { urlFor } from "~/lib/sanity";
+import { getSiteSettings, latestPosts, siteStats } from "~/lib/queries.server";
 
 type Tag = {
   _id: string;
@@ -20,7 +19,7 @@ type Post = {
   snippet: string;
 };
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return [
     ...seoMeta({
       title: "David Glass - Developer Portfolio",
@@ -41,9 +40,6 @@ export function meta({}: Route.MetaArgs) {
 
 const META =
   "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
-const META_LIGHT =
-  "font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim";
-
 const MARQUEE_TOKENS = [
   "SHIP SMALL",
   "REACT",
@@ -65,16 +61,31 @@ type Stats = {
   posts: number;
 };
 
+export async function loader() {
+  const settings = await getSiteSettings();
+  try {
+    const [posts, stats] = await Promise.all([latestPosts(3), siteStats()]);
+    return { posts, stats, settings, error: false };
+  } catch (error: any) {
+    console.error("[Home] Failed to load data:", {
+      message: error?.message || String(error),
+    });
+    return { posts: null, stats: null, settings, error: true };
+  }
+}
+
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function buildStats(s: Stats | null): Array<[string, string]> {
+function buildStats(
+  s: Stats | null,
+): Array<{ n: string; label: string; to?: string }> {
   return [
-    [s ? `${s.years} yrs` : "—", "BUILDING SOFTWARE"],
-    [s ? pad2(s.projects) : "—", "SHIPPED PROJECTS"],
-    [s ? pad2(s.posts) : "—", "ESSAYS PUBLISHED"],
-    ["∞", "CUPS OF COFFEE"],
+    { n: s ? `${s.years} yrs` : "—", label: "BUILDING SOFTWARE" },
+    { n: s ? pad2(s.projects) : "—", label: "SHIPPED PROJECTS", to: "/projects" },
+    { n: s ? pad2(s.posts) : "—", label: "ESSAYS PUBLISHED", to: "/blog" },
+    { n: "∞", label: "CUPS OF COFFEE" },
   ];
 }
 
@@ -88,26 +99,8 @@ function formatDispatchDate(iso?: string | null) {
   return `${mm}.${dd}.${yy}`;
 }
 
-export default function Home() {
-  const [posts, setPosts] = useState<Post[] | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
-
-  useEffect(() => {
-    fetch("/api/blog/latest")
-      .then((res) => res.json())
-      .then((data) => setPosts(data))
-      .catch((err) =>
-        console.error("[Home] Failed to fetch latest posts:", err),
-      );
-    fetch("/api/stats")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data.years === "number") setStats(data);
-      })
-      .catch((err) =>
-        console.error("[Home] Failed to fetch stats:", err),
-      );
-  }, []);
+export default function Home({ loaderData }: Route.ComponentProps) {
+  const { posts, stats, settings, error } = loaderData;
 
   const statRows = buildStats(stats);
 
@@ -116,11 +109,13 @@ export default function Home() {
       <div className="relative z-[2] mx-auto max-w-[1376px]">
         {/* Top meta strip */}
         <div className="mb-7 flex flex-wrap items-center gap-x-[18px] gap-y-2 md:mb-9">
-          <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
-            <span className="inline-block h-1.5 w-1.5 animate-sd-pulse rounded-full bg-sd-acid" />
-            AVAILABLE NOW
-          </span>
-          <span className={META}>EST. 2024</span>
+          {settings.available && (
+            <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
+              <span className="inline-block h-1.5 w-1.5 animate-sd-pulse rounded-full bg-sd-acid" />
+              {settings.availabilityLabel}
+            </span>
+          )}
+          <span className={META}>SHIPPING SINCE 2012</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={`${META} hidden md:inline`}>
             FULL-STACK · IC · REMOTE-FIRST
@@ -175,20 +170,37 @@ export default function Home() {
             Numbers use tabular-nums + whitespace-nowrap so they neither
             re-flow nor visually shift as the digit counts change. */}
         <div className="mt-12 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule md:grid-cols-4 xl:mt-16">
-          {statRows.map(([n, l]) => (
-            <div
-              key={l}
-              className="flex flex-col bg-sd-bg px-4 py-5 md:px-5 md:py-6 xl:px-7 xl:py-7"
-            >
-              <div
-                className="whitespace-nowrap font-sd-display text-[40px] font-bold leading-none text-sd-acid md:text-[44px] xl:text-[64px]"
-                style={{ fontVariantNumeric: "tabular-nums" }}
+          {statRows.map(({ n, label, to }) => {
+            const cell = (
+              <>
+                <div
+                  className="whitespace-nowrap font-sd-display text-[40px] font-bold leading-none text-sd-acid md:text-[44px] xl:text-[64px]"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {n}
+                </div>
+                <div className={`${META} mt-2`}>
+                  {label}
+                  {to && <span className="ml-1.5 text-sd-acid">→</span>}
+                </div>
+              </>
+            );
+            const cellClass =
+              "flex flex-col bg-sd-bg px-4 py-5 md:px-5 md:py-6 xl:px-7 xl:py-7";
+            return to ? (
+              <Link
+                key={label}
+                to={to}
+                className={`${cellClass} no-underline transition-colors duration-150 hover:bg-sd-panel`}
               >
-                {n}
+                {cell}
+              </Link>
+            ) : (
+              <div key={label} className={cellClass}>
+                {cell}
               </div>
-              <div className={`${META} mt-2`}>{l}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Marquee — edges fade to bg so the loop has no visible seam,
@@ -233,15 +245,19 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {posts === null
-              ? [0, 1, 2].map((i) => (
-                  <DispatchSkeleton key={i} delay={i * 0.15} />
-                ))
-              : posts.map((p, i) => (
-                  <DispatchCard key={p._id} post={p} index={i} />
-                ))}
-          </div>
+          {error || posts === null ? (
+            <div className="grid place-items-center border border-sd-rule2 py-12 text-center">
+              <span className={`${META} text-sd-acid`}>
+                § ERR — DISPATCHES UNAVAILABLE · TRY AGAIN SHORTLY
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {posts.map((p: Post, i: number) => (
+                <DispatchCard key={p._id} post={p} index={i} />
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>
@@ -279,6 +295,12 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
         {post.title}
       </h3>
 
+      {post.snippet && (
+        <p className="mb-0 mt-3 line-clamp-2 text-[13px] leading-[1.6] text-sd-dim">
+          {post.snippet}
+        </p>
+      )}
+
       <div className="mt-5 flex items-center gap-2">
         <span className={META}>READ →</span>
       </div>
@@ -286,23 +308,3 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
   );
 }
 
-function DispatchSkeleton({ delay }: { delay: number }) {
-  return (
-    <div
-      className="relative animate-fade-in border border-sd-rule2 bg-sd-bg p-[22px]"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <div className="mb-4 flex items-center gap-3">
-        <div className="h-2 w-10 animate-pulse bg-sd-rule" />
-        <div className="h-2 w-16 animate-pulse bg-sd-rule" />
-        <span className="flex-1" />
-        <div className="h-4 w-12 animate-pulse bg-sd-rule" />
-      </div>
-      <div className="space-y-2">
-        <div className="h-6 w-full animate-pulse bg-sd-rule" />
-        <div className="h-6 w-3/4 animate-pulse bg-sd-rule" />
-      </div>
-      <div className="mt-5 h-2 w-12 animate-pulse bg-sd-rule" />
-    </div>
-  );
-}
