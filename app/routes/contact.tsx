@@ -3,6 +3,7 @@ import type { Route } from "./+types/contact";
 import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
 import { sendContactEmail } from "../lib/email.server";
+import { getSiteSettings } from "~/lib/queries.server";
 import {
   getClientIp,
   looksLikeBot,
@@ -13,12 +14,17 @@ import {
   originAllowed,
 } from "../lib/abuse.server";
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return seoMeta({
     title: "Contact Me - David Glass",
     description: "Get in touch with David Glass.",
     url: "/contact",
   });
+}
+
+export async function loader() {
+  const settings = await getSiteSettings();
+  return { settings };
 }
 
 type ActionData = {
@@ -193,7 +199,8 @@ const CONTACT_CARDS: Array<[string, string]> = [
   ["GITHUB", "/GLASSD"],
 ];
 
-export default function Contact() {
+export default function Contact({ loaderData }: Route.ComponentProps) {
+  const { settings } = loaderData;
   const data = useActionData<ActionData>();
   const nav = useNavigation();
   const sending = nav.state === "submitting";
@@ -252,11 +259,41 @@ export default function Contact() {
               <span className="pointer-events-none absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r border-sd-acid" />
               <div className={`${META_ACID} mb-2`}>STATUS</div>
               <div className="flex items-baseline gap-2 text-[14px] leading-[1.3]">
-                <span className="text-sd-acid">●</span>
+                <span
+                  className={
+                    settings.available ? "text-sd-acid" : "text-sd-faint"
+                  }
+                >
+                  ●
+                </span>
                 <span className="font-sd-display text-[18px] font-semibold leading-[1.2] text-sd-fg md:text-[20px]">
-                  OPEN TO NEW PROJECTS — Q3 / Q4 2026
+                  {settings.availabilityDetail}
                 </span>
               </div>
+            </div>
+
+            {/* What happens next */}
+            <div className="mt-7">
+              <div className={`${META_ACID} mb-3`}>// WHAT HAPPENS NEXT</div>
+              <ol className="m-0 list-none border-t border-sd-rule p-0">
+                {[
+                  ["01", "I read it. Every message, same day."],
+                  ["02", "You get a reply within 24 hours — usually with a call link if it's a project."],
+                  ["03", "If we're a fit, we scope it and pick a first ship date."],
+                ].map(([n, text]) => (
+                  <li
+                    key={n}
+                    className="flex items-baseline gap-3 border-b border-sd-rule py-2.5"
+                  >
+                    <span className="font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                      {n}
+                    </span>
+                    <span className="text-[13px] leading-[1.5] text-sd-dim">
+                      {text}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
 

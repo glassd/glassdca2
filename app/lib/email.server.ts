@@ -42,7 +42,7 @@ function sanitizeHeaderValue(input: string): string {
  */
 function sanitizeEmailAddress(input: string): string {
   const cleaned = sanitizeHeaderValue(input).replace(
-    /[<>\(\)\[\]\\,;:"']/g,
+    /[<>()[\]\\,;:"']/g,
     "",
   );
   return cleaned.slice(0, 254);

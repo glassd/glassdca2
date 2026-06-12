@@ -3,7 +3,7 @@ import { Link, data, useLoaderData } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
-import { SITE_URL, SITE_NAME, TWITTER_HANDLE } from "~/lib/seo";
+import { SITE_URL, SITE_NAME, TWITTER_HANDLE, DEFAULT_OG_IMAGE } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -38,6 +38,7 @@ type Post = {
   tags?: Tag[];
   bodyMarkdown?: string | null;
   excerpt?: string | null;
+  author?: { name?: string | null } | null;
 };
 
 type RelatedPost = {
@@ -52,7 +53,7 @@ type LoaderData = {
   relatedPosts: RelatedPost[];
 };
 
-export function headers({}: Route.HeadersArgs) {
+export function headers(_args: Route.HeadersArgs) {
   return {
     "Cache-Control": "public, max-age=300, stale-while-revalidate=60",
   };
@@ -73,6 +74,7 @@ export async function loader({ params }: Route.LoaderArgs) {
     "tags": tags[]->{ _id, title, "slug": slug.current },
     bodyMarkdown,
     excerpt,
+    "author": author->{ name },
     "tagSlugs": tags[]->slug.current
   }`;
 
@@ -126,7 +128,7 @@ export function meta({ data }: Route.MetaArgs) {
   const rawImage = post?.mainImage
     ? urlFor(post.mainImage).width(1200).height(630).fit("crop").url()
     : undefined;
-  const ogImage = rawImage ?? undefined;
+  const ogImage = rawImage ?? DEFAULT_OG_IMAGE;
 
   const meta: any[] = [
     { title },
@@ -167,7 +169,7 @@ export function meta({ data }: Route.MetaArgs) {
     headline: post?.title ?? title,
     description,
     url: canonical,
-    author: { "@type": "Person", name: SITE_NAME },
+    author: { "@type": "Person", name: post?.author?.name || SITE_NAME },
   };
   if (post?.publishedAt) blogPostingLd.datePublished = post.publishedAt;
   if (ogImage) blogPostingLd.image = ogImage;
@@ -279,10 +281,6 @@ function wordCount(md: string | null | undefined) {
 
 const META =
   "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
-const META_DIM =
-  "font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim";
-const META_ACID =
-  "font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid font-semibold";
 
 export default function BlogPostRoute() {
   const { post, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
@@ -440,9 +438,18 @@ export default function BlogPostRoute() {
   const pubDate = formatPubDate(post.publishedAt);
   const readMin = estimateReadMinutes(md);
   const words = wordCount(md);
-  const heroFigCaption = post.title || "cover image";
+  const heroAlt = post.mainImage?.alt || post.title;
+  const heroFigCaption = post.mainImage?.alt || post.title || "cover image";
 
-  const initials = "DG";
+  const authorName = post.author?.name || SITE_NAME;
+  const initials =
+    authorName
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "DG";
 
   const [prevPost, nextPost] = [
     relatedPosts[0] ?? null,
@@ -630,7 +637,7 @@ export default function BlogPostRoute() {
                   </span>
                   <img
                     src={hero}
-                    alt={post.title}
+                    alt={heroAlt}
                     className="h-full w-full object-cover"
                     loading="eager"
                   />
@@ -708,7 +715,7 @@ export default function BlogPostRoute() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-sd-fg">
-                  David Glass
+                  {authorName}
                 </div>
                 <div className={`${META} mt-[2px]`}>FULL-STACK · TORONTO</div>
               </div>

@@ -8,8 +8,8 @@ export default defineConfig({
   name: 'default',
   title: 'glassdca',
 
-  projectId: 'anguo7xv',
-  dataset: 'production',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID || 'anguo7xv',
+  dataset: process.env.SANITY_STUDIO_DATASET || 'production',
 
   plugins: [structureTool(), visionTool(), markdownSchema()],
 

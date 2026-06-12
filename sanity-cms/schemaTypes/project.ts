@@ -26,11 +26,27 @@ export default defineType({
             options: {
                 hotspot: true,
             },
+            fields: [
+                defineField({
+                    name: 'alt',
+                    title: 'Alternative text',
+                    type: 'string',
+                    description: 'Describes the image for screen readers and SEO.',
+                }),
+            ],
         }),
         defineField({
             name: 'description',
             title: 'Description',
             type: 'text',
+        }),
+        defineField({
+            name: 'stack',
+            title: 'Tech stack',
+            type: 'array',
+            of: [{type: 'string'}],
+            options: {layout: 'tags'},
+            description: 'Short tech labels shown on the project card, e.g. REACT, POSTGRES.',
         }),
         defineField({
             name: 'liveUrl',

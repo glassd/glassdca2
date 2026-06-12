@@ -16,11 +16,11 @@ export function stripMarkdown(md: string): string {
       .replace(/`[^`]*`/g, "")
       // images ![alt](url)
       .replace(/!\[[^\]]*]\([^)]+\)/g, "")
-      // links [text](url)
-      .replace(/\[[^\]]*]\([^)]+\)/g, "$1")
+      // links [text](url) -> text
+      .replace(/\[([^\]]*)]\([^)]+\)/g, "$1")
       // headings, blockquotes, emphasis, lists, hr
       .replace(/^\s{0,3}>\s?/gm, "")
-      .replace(/(^|\s)[#>*_~\-]{1,}/g, " ")
+      .replace(/(^|\s)[#>*_~-]{1,}/g, " ")
       // multiple newlines -> space
       .replace(/\n{2,}/g, " ")
       // collapse whitespace

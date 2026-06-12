@@ -1,4 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,400;10..48,500;10..48,600;10..48,700;10..48,800&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/jetbrains-mono";
 @import "tailwindcss";
 
 @config "../tailwind.config.ts";
@@ -15,9 +17,9 @@
     --sd-rule2: #2a2a2a;
     --sd-acid: #d8ff3a;
 
-    --sd-font-display: "Bricolage Grotesque", system-ui, sans-serif;
-    --sd-font-sans: "Geist", "Inter", system-ui, sans-serif;
-    --sd-font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --sd-font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+    --sd-font-sans: "Geist Variable", system-ui, sans-serif;
+    --sd-font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
   }
 
   html,
@@ -35,6 +37,24 @@
   h5,
   h6 {
     font-family: var(--sd-font-display);
+  }
+
+  /* Keyboard focus — hover styles don't help Tab users, and the
+     browser-default ring disappears against the dark theme. */
+  :focus-visible {
+    outline: 2px solid var(--sd-acid);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

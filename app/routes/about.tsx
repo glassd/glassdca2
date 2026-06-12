@@ -1,7 +1,7 @@
 import type { Route } from "./+types/about";
 import { seoMeta } from "~/lib/seo";
 
-export function meta({}: Route.MetaArgs) {
+export function meta(_args: Route.MetaArgs) {
   return seoMeta({
     title: "About Me - David Glass",
     description:
