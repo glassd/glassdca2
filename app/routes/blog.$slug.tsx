@@ -11,6 +11,7 @@ import {
 } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import { POST_REMARK_PLUGINS, POST_REHYPE_PLUGINS } from "../lib/markdown";
+import { EVENTS, track } from "../lib/analytics";
 import {
   buildHeadings,
   buildImageIndex,
@@ -269,6 +270,20 @@ export default function BlogPostRoute() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [headings]);
+
+  // "Did they finish it?" — the question a post view alone can't answer.
+  // Milestones fire once each per page view, off the scroll progress the
+  // contents rail already computes.
+  const depthSent = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    const pct = Math.round(progress * 100);
+    for (const milestone of [25, 50, 75, 100]) {
+      if (pct >= milestone && !depthSent.current.has(milestone)) {
+        depthSent.current.add(milestone);
+        track(EVENTS.postDepth, { post: post.slug, depth: milestone });
+      }
+    }
+  }, [progress, post.slug]);
 
   const sectionsDone = useMemo(() => {
     if (!activeId) return 0;

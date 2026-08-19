@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Route } from "./+types/contact";
 import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
 import { sendContactEmail } from "../lib/email.server";
 import { getSiteSettings } from "~/lib/queries.server";
+import { EVENTS, track } from "../lib/analytics";
 import {
   getClientIp,
   looksLikeBot,
@@ -125,7 +126,7 @@ export async function action({
   const ip = getClientIp(request);
   console.log(`[contact:${reqId}] client IP`, { ip });
 
-  const rl = rateLimit(ip, now);
+  const rl = await rateLimit(ip, now);
   if (!rl.ok) {
     console.warn(`[contact:${reqId}] rateLimit exceeded`, {
       ip,
@@ -136,7 +137,7 @@ export async function action({
     };
   }
   const contentHash = hashContent(`${email}|${subject}|${message}`);
-  const dup = throttleDuplicates(ip, now, contentHash);
+  const dup = await throttleDuplicates(ip, now, contentHash);
   if (!dup.ok) {
     console.warn(`[contact:${reqId}] duplicate submission detected`, {
       ip,
@@ -214,6 +215,15 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
     setStartedAt(Date.now());
   }, []);
 
+  // Fires once per page view, on first interaction with any field, so the
+  // start/submit pair measures abandonment rather than field focus churn.
+  const startTracked = useRef(false);
+  const onFirstInteraction = () => {
+    if (startTracked.current) return;
+    startTracked.current = true;
+    track(EVENTS.contactStart);
+  };
+
   return (
     <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
       <div className="relative z-[2] mx-auto max-w-[1176px]">
@@ -221,7 +231,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
           <span className={META}>§ 05 — TRANSMIT</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
-          <span className={META}>REPLIES IN ≤ 24H · NO TRACKING</span>
+          <span className={META}>REPLIES IN ≤ 24H · NO COOKIES</span>
         </div>
 
         {/* Hero */}
@@ -321,6 +331,8 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
                 method="post"
                 replace
                 noValidate
+                onFocusCapture={onFirstInteraction}
+                onSubmit={() => track(EVENTS.contactSubmit)}
                 className="flex flex-col gap-[26px]"
               >
                 {/* Honeypot */}

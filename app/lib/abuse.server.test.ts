@@ -8,7 +8,9 @@ import {
   RATE_LIMIT_MAX,
   RATE_LIMIT_WINDOW_MS,
   rateLimit,
+  rateLimitInMemory,
   throttleDuplicates,
+  throttleDuplicatesInMemory,
 } from "./abuse.server";
 
 function req(headers: Record<string, string>) {
@@ -17,9 +19,9 @@ function req(headers: Record<string, string>) {
 
 describe("getClientIp", () => {
   it("prefers the first X-Forwarded-For entry", () => {
-    expect(
-      getClientIp(req({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" })),
-    ).toBe("1.2.3.4");
+    expect(getClientIp(req({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }))).toBe(
+      "1.2.3.4",
+    );
   });
 
   it("falls back to CF-Connecting-IP then X-Real-IP", () => {
@@ -50,9 +52,9 @@ describe("rateLimit", () => {
     const ip = "rate-limit-test-1";
     const now = 1_000_000;
     for (let i = 0; i < RATE_LIMIT_MAX; i++) {
-      expect(rateLimit(ip, now + i).ok).toBe(true);
+      expect(rateLimitInMemory(ip, now + i).ok).toBe(true);
     }
-    const blocked = rateLimit(ip, now + RATE_LIMIT_MAX);
+    const blocked = rateLimitInMemory(ip, now + RATE_LIMIT_MAX);
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) {
       expect(blocked.retryAfterMs).toBeGreaterThan(0);
@@ -63,8 +65,8 @@ describe("rateLimit", () => {
   it("resets the bucket after the window expires", () => {
     const ip = "rate-limit-test-2";
     const now = 1_000_000;
-    for (let i = 0; i < RATE_LIMIT_MAX + 1; i++) rateLimit(ip, now);
-    expect(rateLimit(ip, now + RATE_LIMIT_WINDOW_MS + 1).ok).toBe(true);
+    for (let i = 0; i < RATE_LIMIT_MAX + 1; i++) rateLimitInMemory(ip, now);
+    expect(rateLimitInMemory(ip, now + RATE_LIMIT_WINDOW_MS + 1).ok).toBe(true);
   });
 });
 
@@ -73,15 +75,15 @@ describe("throttleDuplicates", () => {
     const ip = "dup-test-1";
     const now = 1_000_000;
     const hash = hashContent("hello there");
-    expect(throttleDuplicates(ip, now, hash).ok).toBe(true);
-    expect(throttleDuplicates(ip, now + 1000, hash).ok).toBe(false);
+    expect(throttleDuplicatesInMemory(ip, now, hash).ok).toBe(true);
+    expect(throttleDuplicatesInMemory(ip, now + 1000, hash).ok).toBe(false);
   });
 
   it("allows different content from the same IP", () => {
     const ip = "dup-test-2";
     const now = 1_000_000;
-    expect(throttleDuplicates(ip, now, hashContent("first")).ok).toBe(true);
-    expect(throttleDuplicates(ip, now + 1, hashContent("second")).ok).toBe(
+    expect(throttleDuplicatesInMemory(ip, now, hashContent("first")).ok).toBe(true);
+    expect(throttleDuplicatesInMemory(ip, now + 1, hashContent("second")).ok).toBe(
       true,
     );
   });
@@ -90,9 +92,9 @@ describe("throttleDuplicates", () => {
     const ip = "dup-test-3";
     const now = 1_000_000;
     const hash = hashContent("again");
-    expect(throttleDuplicates(ip, now, hash).ok).toBe(true);
+    expect(throttleDuplicatesInMemory(ip, now, hash).ok).toBe(true);
     expect(
-      throttleDuplicates(ip, now + RATE_LIMIT_WINDOW_MS + 1, hash).ok,
+      throttleDuplicatesInMemory(ip, now + RATE_LIMIT_WINDOW_MS + 1, hash).ok,
     ).toBe(true);
   });
 });
@@ -131,5 +133,86 @@ describe("originAllowed", () => {
       originAllowed(req({ referer: "https://glassd.ca/contact" }), site),
     ).toBe(true);
     expect(originAllowed(req({}), site)).toBe(true);
+  });
+});
+
+
+// Production runs without DATABASE_URL until Postgres is stood up, and any
+// query failure takes the same path, so the fallback is the branch that
+// most needs to be right.
+describe("rate limiting without a database", () => {
+  it("delegates to the in-memory limiter and allows up to the max", async () => {
+    const ip = "203.0.113.77";
+    const now = Date.now();
+    for (let i = 0; i < RATE_LIMIT_MAX; i++) {
+      await expect(rateLimit(ip, now)).resolves.toEqual({ ok: true });
+    }
+  });
+
+  it("blocks past the max and reports a positive retry delay", async () => {
+    const ip = "203.0.113.78";
+    const now = Date.now();
+    for (let i = 0; i < RATE_LIMIT_MAX; i++) {
+      await rateLimit(ip, now);
+    }
+    const blocked = await rateLimit(ip, now);
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) {
+      expect(blocked.retryAfterMs).toBeGreaterThan(0);
+      expect(blocked.retryAfterMs).toBeLessThanOrEqual(RATE_LIMIT_WINDOW_MS);
+    }
+  });
+
+  it("allows again once the window has elapsed", async () => {
+    const ip = "203.0.113.79";
+    const now = Date.now();
+    for (let i = 0; i < RATE_LIMIT_MAX; i++) {
+      await rateLimit(ip, now);
+    }
+    expect((await rateLimit(ip, now)).ok).toBe(false);
+    const later = now + RATE_LIMIT_WINDOW_MS + 1;
+    expect((await rateLimit(ip, later)).ok).toBe(true);
+  });
+
+  it("keeps separate counters per IP", async () => {
+    const now = Date.now();
+    for (let i = 0; i < RATE_LIMIT_MAX; i++) {
+      await rateLimit("203.0.113.80", now);
+    }
+    expect((await rateLimit("203.0.113.80", now)).ok).toBe(false);
+    expect((await rateLimit("203.0.113.81", now)).ok).toBe(true);
+  });
+});
+
+describe("duplicate throttling without a database", () => {
+  it("rejects the same content twice from one IP inside the window", async () => {
+    const ip = "203.0.113.90";
+    const now = Date.now();
+    const hash = hashContent("hello@example.com|Subject|Body");
+    await expect(throttleDuplicates(ip, now, hash)).resolves.toEqual({
+      ok: true,
+    });
+    await expect(throttleDuplicates(ip, now, hash)).resolves.toEqual({
+      ok: false,
+    });
+  });
+
+  it("allows different content from the same IP", async () => {
+    const ip = "203.0.113.91";
+    const now = Date.now();
+    await throttleDuplicates(ip, now, hashContent("first"));
+    expect((await throttleDuplicates(ip, now, hashContent("second"))).ok).toBe(
+      true,
+    );
+  });
+
+  it("allows the same content once the window has elapsed", async () => {
+    const ip = "203.0.113.92";
+    const now = Date.now();
+    const hash = hashContent("same message");
+    await throttleDuplicates(ip, now, hash);
+    expect((await throttleDuplicates(ip, now, hash)).ok).toBe(false);
+    const later = now + RATE_LIMIT_WINDOW_MS + 1;
+    expect((await throttleDuplicates(ip, later, hash)).ok).toBe(true);
   });
 });

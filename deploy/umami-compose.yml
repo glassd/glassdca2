@@ -1,0 +1,54 @@
+# Self-hosted analytics for glassd.ca — runs on the VPS alongside the app,
+# not as part of the app's own compose stack, so restarting the site never
+# interrupts collection (and vice versa).
+#
+#   docker compose -f umami-compose.yml up -d
+#
+# Put Umami behind the same reverse proxy as the site on its own hostname
+# (e.g. stats.glassd.ca) with TLS. Do not expose 3000 or 5432 publicly —
+# the ports below bind to loopback for exactly that reason.
+#
+# After first boot, log in at the Umami UI with the default admin
+# credentials, change them immediately, add glassd.ca as a website, and
+# copy the generated website ID into the app's UMAMI_WEBSITE_ID.
+
+services:
+  umami-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      # Set in a .env file next to this compose file. No default — an
+      # unset value should fail loudly rather than boot something weak.
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:?set UMAMI_DB_PASSWORD}
+    volumes:
+      - umami-db-data:/var/lib/postgresql/data
+    ports:
+      # Loopback only. The app reaches this over the Docker network; the
+      # published port exists so the rate limiter can connect from the
+      # host if the app runs outside this stack.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?set UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      # openssl rand -base64 32
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET}
+      # Umami is cookieless for visitors; this only affects the admin UI.
+      TRACKER_SCRIPT_NAME: script.js
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  umami-db-data:

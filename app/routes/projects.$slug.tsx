@@ -17,6 +17,7 @@ import {
   useMarkdownComponents,
 } from "../lib/markdown-render";
 import { deriveStatus, projectYear, type ProjectDetail } from "../lib/projects";
+import { EVENTS, track } from "../lib/analytics";
 
 type MoreProject = { _id: string; title: string; slug: string };
 
@@ -385,6 +386,12 @@ export default function ProjectDetailRoute() {
                       href={project.liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() =>
+                        track(EVENTS.projectOutbound, {
+                          project: project.slug,
+                          destination: "live",
+                        })
+                      }
                       className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
                     >
                       VISIT LIVE SITE ↗
@@ -395,6 +402,12 @@ export default function ProjectDetailRoute() {
                       href={project.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() =>
+                        track(EVENTS.projectOutbound, {
+                          project: project.slug,
+                          destination: "source",
+                        })
+                      }
                       className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
                     >
                       READ THE SOURCE ↗

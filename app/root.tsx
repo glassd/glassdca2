@@ -6,6 +6,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -14,6 +15,19 @@ import "./index.css";
 import SDNav from "./components/sd/SDNav";
 import SDGrid from "./components/sd/SDGrid";
 import SDFooterMeta from "./components/sd/SDFooterMeta";
+
+/**
+ * Analytics config is read at request time rather than inlined at build
+ * time, so pointing the site at a different Umami instance is an env
+ * change and a restart — not a rebuild.
+ */
+export function loader() {
+  const src = process.env.UMAMI_SRC;
+  const websiteId = process.env.UMAMI_WEBSITE_ID;
+  return {
+    analytics: src && websiteId ? { src, websiteId } : null,
+  };
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
@@ -29,6 +43,12 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // useRouteLoaderData rather than useLoaderData: Layout also renders for
+  // error responses, where the root loader data may be absent. It returns
+  // undefined there, and the tracker is simply omitted.
+  const rootData = useRouteLoaderData<typeof loader>("root");
+  const analytics = rootData?.analytics ?? null;
+
   return (
     <html lang="en">
       <head>
@@ -40,6 +60,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="theme-color" content="#0a0a0a" />
         <Meta />
         <Links />
+        {analytics && (
+          <script
+            defer
+            src={analytics.src}
+            data-website-id={analytics.websiteId}
+          />
+        )}
       </head>
       <body className="bg-sd-bg text-sd-fg font-sd-sans">
         {children}
