@@ -14,7 +14,7 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 export default function ContactSent() {
   return (
@@ -35,8 +35,8 @@ export default function ContactSent() {
         </h1>
 
         <p className="mb-10 max-w-[640px] text-[15px] leading-[1.7] text-sd-dim md:text-[17px]">
-          Thanks for reaching out. Your message was delivered and I&apos;ll
-          get back to you as soon as I can — usually within a day.
+          Thanks for reaching out. Your message was delivered and I&apos;ll get
+          back to you as soon as I can — usually within a day.
         </p>
 
         <div className="grid grid-cols-1 gap-3 md:flex md:flex-wrap md:gap-3">

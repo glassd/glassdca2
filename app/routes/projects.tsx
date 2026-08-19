@@ -20,9 +20,9 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 
 export async function loader() {
   try {
@@ -94,6 +94,11 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   const yr = projectYear(project.publishedAt);
   const status = deriveStatus(project);
 
+  // The grid is two-up, so the first row is above the fold on every
+  // breakpoint. Lazy-loading those meant first paint was empty boxes —
+  // the covers are the whole point of the page, so they load eagerly.
+  const isAboveFold = index < 2;
+
   // The whole card is one internal link. Live-site and source links used
   // to sit here and sent visitors off-domain before they'd read anything;
   // they now live on the case study itself.
@@ -103,18 +108,29 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       className="group flex flex-col bg-sd-bg p-5 no-underline transition-colors duration-150 hover:bg-[#0e0e0e] md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7"
     >
       {/* Cover */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel md:w-[220px] md:shrink-0 md:self-start xl:w-full">
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel bg-cover bg-center md:w-[220px] md:shrink-0 md:self-start xl:w-full"
+        style={
+          project.mainImage?.lqip
+            ? { backgroundImage: `url(${project.mainImage.lqip})` }
+            : undefined
+        }
+      >
         {cover ? (
           <img
             src={cover}
             alt={project.mainImage?.alt || project.title}
-            loading="lazy"
+            loading={isAboveFold ? "eager" : "lazy"}
+            fetchPriority={isAboveFold ? "high" : undefined}
+            decoding={isAboveFold ? "sync" : "async"}
+            width={960}
+            height={600}
             className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
           />
         ) : (
           <DiagonalStripePattern />
         )}
-        <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+        <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
           FIG. {num}
         </span>
       </div>
@@ -127,7 +143,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <span className="flex-1" />
           <span
             className={
-              "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] " +
+              "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] " +
               status.color
             }
           >
@@ -150,7 +166,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             {project.stack.map((s) => (
               <span
                 key={s}
-                className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+                className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim"
               >
                 {s}
               </span>

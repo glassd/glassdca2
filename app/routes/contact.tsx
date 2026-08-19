@@ -186,11 +186,11 @@ export async function action({
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 const FIELD_LABEL =
-  "block font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "block font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 const CONTACT_CARDS: Array<[string, string]> = [
   ["DIRECT", "HELLO@GLASSD.CA"],
@@ -238,8 +238,8 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
           <div>
             <p className="m-0 max-w-[460px] text-[14px] leading-[1.65] text-sd-dim md:text-[16px]">
               Project inquiries, recruiting, or just &ldquo;hey I liked your
-              post&rdquo; — all welcome. I read everything and reply within
-              a day.
+              post&rdquo; — all welcome. I read everything and reply within a
+              day.
             </p>
 
             <div className="mt-9 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule">
@@ -278,14 +278,20 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
               <ol className="m-0 list-none border-t border-sd-rule p-0">
                 {[
                   ["01", "I read it. Every message, same day."],
-                  ["02", "You get a reply within 24 hours — usually with a call link if it's a project."],
-                  ["03", "If we're a fit, we scope it and pick a first ship date."],
+                  [
+                    "02",
+                    "You get a reply within 24 hours — usually with a call link if it's a project.",
+                  ],
+                  [
+                    "03",
+                    "If we're a fit, we scope it and pick a first ship date.",
+                  ],
                 ].map(([n, text]) => (
                   <li
                     key={n}
                     className="flex items-baseline gap-3 border-b border-sd-rule py-2.5"
                   >
-                    <span className="font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                    <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
                       {n}
                     </span>
                     <span className="text-[13px] leading-[1.5] text-sd-dim">
@@ -442,7 +448,7 @@ function FormField({
         />
       )}
       {error && (
-        <p className="mt-1.5 font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+        <p className="mt-1.5 font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
           {error}
         </p>
       )}

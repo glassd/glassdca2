@@ -131,9 +131,9 @@ export function meta({ data: loaderData }: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 
 export default function ProjectDetailRoute() {
   const { project, more } = useLoaderData<typeof loader>() as LoaderData;
@@ -235,7 +235,7 @@ export default function ProjectDetailRoute() {
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <span
               className={
-                "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] " +
+                "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] " +
                 status.color
               }
             >
@@ -261,7 +261,7 @@ export default function ProjectDetailRoute() {
         {hero && (
           <figure className="mb-10">
             <div className="relative aspect-[16/9] overflow-hidden border border-sd-rule2 bg-sd-panel">
-              <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+              <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
                 FIG. 01
               </span>
               <img
@@ -321,7 +321,7 @@ export default function ProjectDetailRoute() {
                     return (
                       <figure key={img.key} className="m-0">
                         <div className="relative overflow-hidden border border-sd-rule2 bg-sd-panel">
-                          <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                          <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
                             FIG. {fig}
                           </span>
                           <img
@@ -367,7 +367,7 @@ export default function ProjectDetailRoute() {
                   {project.stack.map((s) => (
                     <span
                       key={s}
-                      className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+                      className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim"
                     >
                       {s}
                     </span>
@@ -385,7 +385,7 @@ export default function ProjectDetailRoute() {
                       href={project.liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+                      className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
                     >
                       VISIT LIVE SITE ↗
                     </a>
@@ -395,7 +395,7 @@ export default function ProjectDetailRoute() {
                       href={project.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+                      className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
                     >
                       READ THE SOURCE ↗
                     </a>

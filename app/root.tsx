@@ -91,11 +91,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       <main className="relative z-[1] grow px-[18px] pb-6 pt-12 md:px-7 md:pt-16 xl:px-8 xl:pt-20">
         <div className="relative z-[2] mx-auto max-w-[1176px]">
           <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-            <span className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint">
+            <span className="font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint">
               § {String(status)} — FAULT
             </span>
             <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
-            <span className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint">
+            <span className="font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint">
               STAY CALM
             </span>
           </div>

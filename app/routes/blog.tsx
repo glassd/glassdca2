@@ -72,14 +72,17 @@ type Post = {
   tags?: Tag[];
   snippet: string;
   publishedAt?: string | null;
+  // Derived server-side from the real post body — see withSnippet.
+  words: number;
+  readMinutes: number | null;
 };
 
 const PAGE_SIZE = 10;
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_DIM =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-dim";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-dim";
 
 function formatListDate(iso?: string | null) {
   if (!iso) return null;
@@ -91,14 +94,11 @@ function formatListDate(iso?: string | null) {
   return `${yyyy}.${mm}.${dd}`;
 }
 
-function readMinutes(snippet?: string | null) {
-  if (!snippet) return 1;
-  const words = snippet.split(/\s+/).filter(Boolean).length;
-  // snippet is ~200 chars / 30 words; scale up to a representative full-post estimate.
-  return Math.max(2, Math.min(15, Math.round((words / 200) * 60)));
-}
-
-function BlogContent({ initial }: { initial: Route.ComponentProps["loaderData"] }) {
+function BlogContent({
+  initial,
+}: {
+  initial: Route.ComponentProps["loaderData"];
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialQ = searchParams.get("q") || "";
@@ -258,7 +258,7 @@ function BlogContent({ initial }: { initial: Route.ComponentProps["loaderData"] 
           type="button"
           onClick={clearFilters}
           className={
-            "inline-flex items-center gap-1 border px-2.5 py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] transition-colors " +
+            "inline-flex items-center gap-1 border px-2.5 py-[5px] font-sd-mono text-[11px] uppercase tracking-[0.08em] transition-colors " +
             (selectedTags.length === 0 && !debouncedQ
               ? "border-sd-acid bg-sd-acid font-semibold text-sd-bg"
               : "border-sd-rule2 text-sd-dim hover:border-sd-fg hover:text-sd-fg")
@@ -274,7 +274,7 @@ function BlogContent({ initial }: { initial: Route.ComponentProps["loaderData"] 
               type="button"
               onClick={() => toggleTag(t.slug)}
               className={
-                "inline-flex items-center gap-1.5 border px-2.5 py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] transition-colors " +
+                "inline-flex items-center gap-1.5 border px-2.5 py-[5px] font-sd-mono text-[11px] uppercase tracking-[0.08em] transition-colors " +
                 (active
                   ? "border-sd-acid bg-sd-acid font-semibold text-sd-bg"
                   : "border-sd-rule2 text-sd-dim hover:border-sd-fg hover:text-sd-fg")
@@ -305,11 +305,7 @@ function BlogContent({ initial }: { initial: Route.ComponentProps["loaderData"] 
       {loading && posts.length === 0 ? (
         <FeaturedSkeleton />
       ) : featured ? (
-        <FeaturedPost
-          post={featured}
-          number="001"
-          linkSuffix={linkSuffix}
-        />
+        <FeaturedPost post={featured} number="001" linkSuffix={linkSuffix} />
       ) : null}
 
       {/* More posts list */}
@@ -380,7 +376,7 @@ function FeaturedPost({
       className="group grid grid-cols-1 gap-6 border border-sd-rule2 p-5 no-underline transition-colors hover:border-sd-fg md:grid-cols-[1fr_1.1fr] md:gap-8 md:p-7"
     >
       <div className="relative aspect-[16/10] overflow-hidden border border-sd-rule2 bg-sd-panel">
-        <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+        <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
           FEATURED
         </span>
         {cover ? (
@@ -388,7 +384,11 @@ function FeaturedPost({
             src={cover}
             alt={post.mainImage?.alt || post.title}
             className="h-full w-full object-cover"
-            loading="lazy"
+            // Largest above-the-fold image on the page; lazy-loading it
+            // meant first paint was an empty panel.
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
           />
         ) : (
           <div className="grid h-full w-full place-items-center font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
@@ -402,14 +402,14 @@ function FeaturedPost({
             № {number}
           </span>
           {date && (
-            <span className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-dim">
+            <span className="font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-dim">
               {date}
             </span>
           )}
           {post.tags?.slice(0, 2).map((t) => (
             <span
               key={t._id}
-              className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+              className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim"
             >
               {t.title}
             </span>
@@ -463,7 +463,7 @@ function PostRow({
 }) {
   const date = formatListDate(post.publishedAt);
   const tag = post.tags?.[0]?.title;
-  const mins = readMinutes(post.snippet);
+  const mins = post.readMinutes;
 
   return (
     <li className="border-b border-sd-rule">
@@ -476,7 +476,7 @@ function PostRow({
         </span>
         {date && (
           <span
-            className={`font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint md:row-start-1 md:col-start-2`}
+            className={`font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint md:row-start-1 md:col-start-2`}
           >
             {date}
           </span>
@@ -485,14 +485,16 @@ function PostRow({
           {post.title}
         </h3>
         {tag && (
-          <span className={`${META_DIM} hidden md:row-start-1 md:col-start-4 md:inline`}>
+          <span
+            className={`${META_DIM} hidden md:row-start-1 md:col-start-4 md:inline`}
+          >
             {tag}
           </span>
         )}
         <span
           className={`${META} hidden text-right md:row-start-1 md:col-start-5 md:inline`}
         >
-          {mins}M ↗
+          {mins != null ? `${mins}M ` : ""}↗
         </span>
       </Link>
     </li>

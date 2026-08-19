@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { seoMeta, SITE_URL, SITE_NAME } from "~/lib/seo";
 import { getSiteSettings, latestPosts, siteStats } from "~/lib/queries.server";
+import { CAREER_START_YEAR } from "~/lib/site";
 
 type Tag = {
   _id: string;
@@ -39,7 +40,7 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const MARQUEE_TOKENS = [
   "SHIP SMALL",
   "REACT",
@@ -81,15 +82,16 @@ function pad2(n: number) {
 function buildStats(
   s: Stats | null,
 ): Array<{ n: string; label: string; to?: string }> {
+  // Every cell has to be a number someone could check. The joke cell that
+  // used to sit here made the two load-bearing figures read as decoration.
   return [
-    { n: s ? `${s.years} yrs` : "—", label: "BUILDING SOFTWARE" },
+    { n: s ? `${s.years} yrs` : "—", label: "IN TECHNOLOGY" },
     {
       n: s ? pad2(s.projects) : "—",
       label: "SHIPPED PROJECTS",
       to: "/projects",
     },
     { n: s ? pad2(s.posts) : "—", label: "ESSAYS PUBLISHED", to: "/blog" },
-    { n: "∞", label: "CUPS OF COFFEE" },
   ];
 }
 
@@ -114,12 +116,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         {/* Top meta strip */}
         <div className="mb-7 flex flex-wrap items-center gap-x-[18px] gap-y-2 md:mb-9">
           {settings.available && (
-            <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
+            <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
               <span className="inline-block h-1.5 w-1.5 animate-sd-pulse rounded-full bg-sd-acid" />
               {settings.availabilityLabel}
             </span>
           )}
-          <span className={META}>SHIPPING SINCE 2012</span>
+          <span className={META}>IN TECHNOLOGY SINCE {CAREER_START_YEAR}</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={`${META} hidden md:inline`}>
             FULL-STACK · IC · REMOTE-FIRST
@@ -171,11 +173,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </div>
         </div>
 
-        {/* Stats row — hairline-divided cells keep the visual rhythm
-            even when individual values vary in width ("14 yrs" vs "∞").
-            Numbers use tabular-nums + whitespace-nowrap so they neither
-            re-flow nor visually shift as the digit counts change. */}
-        <div className="mt-12 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule md:grid-cols-4 xl:mt-16">
+        {/* Stats row — hairline-divided cells keep the visual rhythm even
+            when values vary in width ("11 yrs" vs "04"). Numbers use
+            tabular-nums + whitespace-nowrap so they neither re-flow nor
+            visually shift as the digit counts change. */}
+        <div className="mt-12 grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule sm:grid-cols-3 xl:mt-16">
           {statRows.map(({ n, label, to }) => {
             const cell = (
               <>
@@ -281,13 +283,13 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
       <span className="pointer-events-none absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r border-sd-acid" />
 
       <div className="mb-4 flex items-center gap-3">
-        <span className="font-sd-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-sd-acid">
+        <span className="font-sd-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-sd-acid">
           № {num}
         </span>
         {date && <span className={META}>{date}</span>}
         <span className="flex-1" />
         {primaryTag && (
-          <span className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
+          <span className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
             {primaryTag}
           </span>
         )}

@@ -11,7 +11,7 @@ function sectionLabel(pathname: string): string {
 }
 
 const META_CLASS =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 const SOCIALS: Array<{ label: string; href: string }> = [
   { label: "GITHUB", href: "https://github.com/glassd" },

@@ -217,7 +217,7 @@ function formatPubDate(iso?: string | null) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 export default function BlogPostRoute() {
   const { post, relatedPosts } = useLoaderData<typeof loader>() as LoaderData;
@@ -347,7 +347,7 @@ export default function BlogPostRoute() {
         {/* Mobile: collapsible TOC accordion */}
         {headings.length > 0 && (
           <details className="mb-6 border border-sd-rule2 xl:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid">
               <span>// CONTENTS</span>
               <span className="text-sd-faint">▾</span>
             </summary>
@@ -364,7 +364,7 @@ export default function BlogPostRoute() {
                   >
                     <span
                       className={
-                        "font-sd-mono text-[10px] tracking-[0.08em] " +
+                        "font-sd-mono text-[11px] tracking-[0.08em] " +
                         (h.id === activeId ? "text-sd-acid" : "text-sd-faint") +
                         (h.level === 3 ? " invisible" : "")
                       }
@@ -400,7 +400,7 @@ export default function BlogPostRoute() {
                   >
                     <span
                       className={
-                        "font-sd-mono text-[10px] tracking-[0.08em] " +
+                        "font-sd-mono text-[11px] tracking-[0.08em] " +
                         (active ? "text-sd-acid" : "text-sd-faint") +
                         (sub ? " invisible" : "")
                       }
@@ -450,7 +450,7 @@ export default function BlogPostRoute() {
                 {post.tags?.map((t) => (
                   <span
                     key={t._id}
-                    className="inline-flex items-center border border-sd-rule2 px-2.5 py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+                    className="inline-flex items-center border border-sd-rule2 px-2.5 py-[5px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim"
                   >
                     {t.title}
                   </span>
@@ -477,7 +477,7 @@ export default function BlogPostRoute() {
             {hero && (
               <figure className="mb-10">
                 <div className="relative aspect-[21/9] overflow-hidden border border-sd-rule2 bg-sd-panel">
-                  <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                  <span className="absolute left-3 top-3 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
                     FIG. 01
                   </span>
                   <img
@@ -649,7 +649,7 @@ function ShareButtons({ title, slug }: { title: string; slug: string }) {
             href={it.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+            className="border border-sd-rule2 px-[10px] py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
           >
             {it.label} ↗
           </a>
@@ -658,7 +658,7 @@ function ShareButtons({ title, slug }: { title: string; slug: string }) {
             key={it.label}
             type="button"
             onClick={it.onClick}
-            className="border border-sd-rule2 px-[10px] py-2 text-left font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid"
+            className="border border-sd-rule2 px-[10px] py-2 text-left font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg transition-colors hover:border-sd-acid hover:text-sd-acid"
           >
             {it.label} ↗
           </button>

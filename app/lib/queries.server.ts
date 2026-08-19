@@ -1,6 +1,11 @@
 import { client } from "./sanity";
+import { CAREER_START_YEAR } from "./site";
+import { estimateReadMinutes, wordCount } from "./markdown-render";
 import { stripMarkdown, truncateAtWord } from "./utils";
 
+// bodyMarkdown is fetched only so the reading estimate can be computed
+// from the real post rather than extrapolated from a snippet. withSnippet
+// strips it before the list is returned, so it never reaches the client.
 const POST_PROJECTION = `{
   _id,
   title,
@@ -9,12 +14,16 @@ const POST_PROJECTION = `{
   publishedAt,
   "tags": tags[]->{ _id, title, "slug": slug.current },
   "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\\n")[0]),
+  bodyMarkdown,
 }`;
 
 function withSnippet(p: any) {
+  const { bodyMarkdown, ...rest } = p;
   return {
-    ...p,
+    ...rest,
     snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
+    words: wordCount(bodyMarkdown),
+    readMinutes: estimateReadMinutes(bodyMarkdown),
   };
 }
 
@@ -92,7 +101,7 @@ const PROJECT_CARD_PROJECTION = `{
   _id,
   title,
   "slug": slug.current,
-  mainImage,
+  mainImage{ ..., "lqip": asset->metadata.lqip },
   description,
   stack,
   liveUrl,
@@ -129,7 +138,7 @@ export async function getProject(slug: string) {
     _id,
     title,
     "slug": slug.current,
-    mainImage,
+    mainImage{ ..., "lqip": asset->metadata.lqip },
     description,
     stack,
     liveUrl,
@@ -186,7 +195,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-const CODING_SINCE_YEAR = 2012;
+
 
 export async function siteStats() {
   const query = `{
@@ -199,7 +208,7 @@ export async function siteStats() {
   }>(query);
 
   return {
-    years: Math.max(0, new Date().getFullYear() - CODING_SINCE_YEAR),
+    years: Math.max(0, new Date().getFullYear() - CAREER_START_YEAR),
     projects,
     posts,
   };
