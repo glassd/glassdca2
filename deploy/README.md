@@ -6,6 +6,89 @@ separately, to Sanity's own hosting.
 
 ---
 
+## First-time setup
+
+Ordered because some steps block others. Everything before step 8 can be
+done while the branch is still unmerged — the app ignores all of it until
+the environment variables are present.
+
+### 0. DNS — do this first, it propagates in the background
+
+Add an A record for `stats.glassd.ca` pointing at the VPS. Traefik cannot
+issue a certificate until this resolves, and it is the step most likely
+to be sitting half-propagated when you need it.
+
+### 1. Redeploy Sanity Studio
+
+The case-study fields do not exist in the studio UI until this runs.
+
+    cd sanity-cms
+    bun install
+    bun run deploy
+
+Confirm: open the studio, edit a project, and check for the **Case study**
+and **Media** tabs.
+
+### 2. Create the Postgres database service in Dokploy
+
+A **Database → Postgres** service. Enable scheduled backups against your
+existing storage. Copy the connection string it generates.
+
+### 3. Add the second database
+
+Against that same instance, once:
+
+    CREATE DATABASE glassdca;
+
+This one is intentionally left out of backups — see **Databases** below.
+
+### 4. Deploy Umami
+
+Template if Dokploy has one, otherwise a **Compose** service pointed at
+`deploy/umami-compose.yml`. Environment:
+
+    UMAMI_DATABASE_URL=<connection string from step 2>
+    UMAMI_APP_SECRET=<openssl rand -base64 32>
+
+### 5. Attach the domain
+
+Set `stats.glassd.ca` on the Umami service in Dokploy and let it issue the
+certificate. Confirm the URL loads over HTTPS before continuing.
+
+### 6. Umami first run
+
+Log in with the default credentials (`admin` / `umami`) and **change the
+password immediately** — the instance is publicly reachable by this point.
+Then add `glassd.ca` as a website and copy its generated ID.
+
+### 7. Set the app's environment in Dokploy
+
+On the existing site application, not the Umami one:
+
+    UMAMI_SRC=https://stats.glassd.ca/script.js
+    UMAMI_WEBSITE_ID=<id from step 6>
+    DATABASE_URL=postgresql://user:pass@host:5432/glassdca
+
+### 8. Write at least one case study
+
+The project pages are live the moment this deploys, and they are in the
+sitemap. Shipping with all four reading "write-up pending" means search
+engines discover four thin pages. Write Pulsio first, and set `featured`
+on the two projects worth surfacing on the home page.
+
+### 9. Push
+
+Merging to the tracked branch triggers the Dokploy build.
+
+Afterwards, confirm:
+
+- View source on the homepage — a `<script defer src="https://stats.glassd.ca/script.js">` tag is present
+- The Umami dashboard shows the visit
+- `/projects/pulsio` renders the case study
+- `/sitemap.xml` lists the project URLs
+
+---
+
 ## Deploy safety
 
 Both features added in Phase 3 are env-gated and fail soft, so the app
@@ -26,16 +109,12 @@ rejecting submissions.
 
 ## Sanity Studio
 
-The case-study fields (`bodyMarkdown`, `role`, `timeframe`, `outcome`,
-`gallery`, `featured`) live in `sanity-cms/schemaTypes/project.ts`. They
-do not appear in the Studio until it is redeployed:
-
-    cd sanity-cms
-    bun install
-    bun run deploy
-
-Until then the fields exist in the codebase and are queried by the site,
-but there is no UI to fill them in.
+Deployed to Sanity's own hosting, not through Dokploy, so it does not
+redeploy when the site does. Any change to
+`sanity-cms/schemaTypes/*` needs `bun run deploy` from `sanity-cms/`
+before the fields appear in the studio UI — the site queries them either
+way, so a missed studio deploy shows up as fields you cannot fill in
+rather than as an error.
 
 ---
 
@@ -72,39 +151,8 @@ backup is a guess.
 
 ## Analytics (Umami)
 
-### 1. Create the database
-
-A Postgres Database service in Dokploy, with backups enabled per above.
-Keep the connection string it generates.
-
-### 2. Stand up Umami
-
-Check Dokploy's template library first — if it carries Umami, use it and
-skip the compose file, since the template wires up Traefik and TLS.
-
-Otherwise create a **Compose** service pointed at `umami-compose.yml` in
-this directory. It defines only the web service; the database is the one
-from step 1. Set in its environment:
-
-    UMAMI_DATABASE_URL=<connection string from step 1>
-    UMAMI_APP_SECRET=<openssl rand -base64 32>
-
-### 3. Point a hostname at it
-
-Give it its own subdomain (`stats.glassd.ca`) in Dokploy so Traefik
-issues a certificate. Do not serve it from the site's own domain.
-
-### 4. Wire the app to it
-
-Log in, change the default admin credentials immediately, add `glassd.ca`
-as a website, and copy the generated ID into the app's environment in
-Dokploy:
-
-    UMAMI_SRC=https://stats.glassd.ca/script.js
-    UMAMI_WEBSITE_ID=<id from the Umami UI>
-
-Both are read per request in `app/root.tsx`, so this needs a restart but
-not a rebuild.
+Setup procedure is in **First-time setup** above. This section is
+reference for afterwards.
 
 ### Why self-hosted
 
