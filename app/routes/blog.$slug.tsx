@@ -3,25 +3,21 @@ import { Link, data, useLoaderData } from "react-router";
 import type { Route } from "./+types/blog.$slug";
 import { client } from "../lib/sanity";
 import { urlFor } from "../lib/sanity";
-import { SITE_URL, SITE_NAME, TWITTER_HANDLE, DEFAULT_OG_IMAGE } from "~/lib/seo";
+import {
+  SITE_URL,
+  SITE_NAME,
+  TWITTER_HANDLE,
+  DEFAULT_OG_IMAGE,
+} from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import rehypeHighlight from "rehype-highlight";
-import { remarkMark } from "../lib/remark-mark";
-
-// Allow rehype-highlight's token classes (hljs / hljs-*) plus the
-// language-* class through the sanitizer, and add <mark> to the
-// allowed tag names so the ==marked== remark plugin's output survives.
-const POST_SCHEMA = {
-  ...defaultSchema,
-  tagNames: [...((defaultSchema.tagNames as string[]) || []), "mark"],
-  attributes: {
-    ...defaultSchema.attributes,
-    code: [["className", /^language-./, "hljs", /^hljs-/]],
-    span: [["className", "hljs", /^hljs-/]],
-  },
-};
+import { POST_REMARK_PLUGINS, POST_REHYPE_PLUGINS } from "../lib/markdown";
+import {
+  buildHeadings,
+  buildImageIndex,
+  estimateReadMinutes,
+  useMarkdownComponents,
+  wordCount,
+} from "../lib/markdown-render";
 
 type Tag = {
   _id: string;
@@ -104,7 +100,10 @@ export async function loader({ params }: Route.LoaderArgs) {
       title,
       "slug": slug.current
     }`;
-    relatedPosts = await client.fetch<RelatedPost[]>(relatedQuery, { slug, tagSlugs });
+    relatedPosts = await client.fetch<RelatedPost[]>(relatedQuery, {
+      slug,
+      tagSlugs,
+    });
   }
 
   return data(
@@ -173,82 +172,31 @@ export function meta({ data }: Route.MetaArgs) {
   };
   if (post?.publishedAt) blogPostingLd.datePublished = post.publishedAt;
   if (ogImage) blogPostingLd.image = ogImage;
-  meta.push({ "script:ld+json": JSON.stringify(blogPostingLd) });
+  meta.push({ "script:ld+json": blogPostingLd });
 
   meta.push({
-    "script:ld+json": JSON.stringify({
+    "script:ld+json": {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
-        { "@type": "ListItem", position: 3, name: post?.title ?? "Post", item: canonical },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: `${SITE_URL}/blog`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post?.title ?? "Post",
+          item: canonical,
+        },
       ],
-    }),
+    },
   });
 
   return meta;
-}
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
-}
-
-function extractText(node: any): string {
-  if (node == null) return "";
-  if (Array.isArray(node)) return node.map(extractText).join("");
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (typeof node === "object" && "props" in node) {
-    return extractText((node as any).props?.children);
-  }
-  return "";
-}
-
-const LETTERS = "abcdefghijklmnopqrstuvwxyz";
-
-type Heading = { id: string; text: string; level: 2 | 3; num: string };
-
-function buildHeadings(md: string): Heading[] {
-  const items: Heading[] = [];
-  let h2Count = 0;
-  let h3LetterIdx = 0;
-  for (const rawLine of md.split("\n")) {
-    const line = rawLine.trimEnd();
-    const m = line.match(/^(#{2,3})\s+(.+)$/);
-    if (!m) continue;
-    const level = m[1].length as 2 | 3;
-    const text = m[2].replace(/#+\s*$/, "").trim();
-    if (!text) continue;
-    let num = "";
-    if (level === 2) {
-      h2Count += 1;
-      h3LetterIdx = 0;
-      num = String(h2Count).padStart(2, "0");
-    } else if (h2Count > 0) {
-      num = `${String(h2Count).padStart(2, "0")}${LETTERS[h3LetterIdx] ?? ""}`;
-      h3LetterIdx += 1;
-    }
-    items.push({ id: slugify(text), text, level, num });
-  }
-  return items;
-}
-
-function buildImageIndex(md: string, startAt: number): Map<string, number> {
-  const map = new Map<string, number>();
-  const re = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-  let m: RegExpExecArray | null;
-  let n = startAt;
-  while ((m = re.exec(md))) {
-    if (!map.has(m[1])) {
-      map.set(m[1], n);
-      n += 1;
-    }
-  }
-  return map;
 }
 
 function formatBreadcrumbDate(iso?: string | null) {
@@ -266,17 +214,6 @@ function formatPubDate(iso?: string | null) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}.${mm}.${dd}`;
-}
-
-function estimateReadMinutes(md: string | null | undefined) {
-  if (!md) return null;
-  const words = md.split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / 220));
-}
-
-function wordCount(md: string | null | undefined) {
-  if (!md) return 0;
-  return md.split(/\s+/).filter(Boolean).length;
 }
 
 const META =
@@ -300,10 +237,7 @@ export default function BlogPostRoute() {
     () => new Map(headings.map((h) => [h.id, h.num])),
     [headings],
   );
-  const imgFigs = useMemo(
-    () => buildImageIndex(md, hero ? 2 : 1),
-    [md, hero],
-  );
+  const imgFigs = useMemo(() => buildImageIndex(md, hero ? 2 : 1), [md, hero]);
 
   const articleRef = useRef<HTMLElement>(null);
   const [activeId, setActiveId] = useState<string | null>(
@@ -343,96 +277,7 @@ export default function BlogPostRoute() {
   }, [activeId, headings]);
   const sectionsTotal = headings.length;
 
-  const mdComponents = useMemo(
-    () => ({
-      h1: ({ node: _n, children, ...props }: any) => {
-        const id = slugify(extractText(children));
-        return (
-          <h1 {...props} id={id || undefined}>
-            {children}
-          </h1>
-        );
-      },
-      h2: ({ node: _n, children, ...props }: any) => {
-        const text = extractText(children);
-        const id = slugify(text);
-        const num = headingNumById.get(id);
-        return (
-          <h2 {...props} id={id || undefined}>
-            {num ? <span className="sd-num">§ {num}</span> : null}
-            <span>{children}</span>
-          </h2>
-        );
-      },
-      h3: ({ node: _n, children, ...props }: any) => {
-        const id = slugify(extractText(children));
-        return (
-          <h3 {...props} id={id || undefined}>
-            {children}
-          </h3>
-        );
-      },
-      p: ({ node, children, ...props }: any) => {
-        const kids = node?.children;
-        if (
-          Array.isArray(kids) &&
-          kids.length === 1 &&
-          kids[0]?.type === "element" &&
-          kids[0]?.tagName === "img"
-        ) {
-          return <>{children}</>;
-        }
-        return <p {...props}>{children}</p>;
-      },
-      a: ({ node: _n, href, children, ...props }: any) => {
-        const isExternal =
-          typeof href === "string" && /^https?:\/\//.test(href);
-        return (
-          <a
-            {...props}
-            href={href}
-            target={isExternal ? "_blank" : undefined}
-            rel={isExternal ? "noopener noreferrer" : undefined}
-          >
-            {children}
-          </a>
-        );
-      },
-      img: ({ node: _n, src, alt }: any) => {
-        const fig = (src && imgFigs.get(src)) ?? null;
-        const padded = fig != null ? String(fig).padStart(2, "0") : null;
-        return (
-          <figure>
-            <img src={src} alt={alt || ""} loading="lazy" />
-            {(alt || padded) && (
-              <figcaption>
-                {padded && <span className="sd-fig">FIG. {padded}</span>}
-                {alt && <span>{alt}</span>}
-              </figcaption>
-            )}
-          </figure>
-        );
-      },
-      pre: ({ node: _n, children, ...props }: any) => {
-        let lang: string | null = null;
-        const child = Array.isArray(children) ? children[0] : children;
-        const className = child?.props?.className;
-        if (typeof className === "string") {
-          const m = className.match(/language-([\w-]+)/);
-          if (m) lang = m[1];
-        }
-        return (
-          <pre {...props}>
-            {children}
-            {lang && (
-              <span className="sd-pre-label">{lang.toUpperCase()}</span>
-            )}
-          </pre>
-        );
-      },
-    }),
-    [headingNumById, imgFigs],
-  );
+  const mdComponents = useMarkdownComponents(headingNumById, imgFigs);
 
   const year = formatBreadcrumbDate(post.publishedAt);
   const pubDate = formatPubDate(post.publishedAt);
@@ -652,11 +497,8 @@ export default function BlogPostRoute() {
             <article ref={articleRef} className="sd-post-body">
               {post.bodyMarkdown ? (
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMark]}
-                  rehypePlugins={[
-                    rehypeHighlight,
-                    [rehypeSanitize, POST_SCHEMA],
-                  ]}
+                  remarkPlugins={POST_REMARK_PLUGINS}
+                  rehypePlugins={POST_REHYPE_PLUGINS as any}
                   components={mdComponents as any}
                 >
                   {post.bodyMarkdown}
@@ -668,8 +510,7 @@ export default function BlogPostRoute() {
                 className="mt-9 border-t border-sd-rule2 pt-[18px] font-sd-mono text-[13px] uppercase tracking-[0.06em] text-sd-faint"
                 style={{ maxWidth: 680 }}
               >
-                // END · POSTED FROM TORONTO ·{" "}
-                {words.toLocaleString()} WORDS
+                // END · POSTED FROM TORONTO · {words.toLocaleString()} WORDS
               </p>
             </article>
 
@@ -767,8 +608,7 @@ function ShareButtons({ title, slug }: { title: string; slug: string }) {
 
   const onCopy = async () => {
     if (typeof navigator === "undefined") return;
-    const href =
-      typeof window !== "undefined" ? window.location.href : url;
+    const href = typeof window !== "undefined" ? window.location.href : url;
     try {
       await navigator.clipboard.writeText(href);
       setCopied(true);
@@ -778,28 +618,27 @@ function ShareButtons({ title, slug }: { title: string; slug: string }) {
     }
   };
 
-  const items: Array<{ label: string; href?: string; onClick?: () => void }> =
-    [
-      { label: copied ? "COPIED ✓" : "COPY LINK", onClick: onCopy },
-      {
-        label: "POST TO X",
-        href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-          title,
-        )}&url=${encodeURIComponent(url)}`,
-      },
-      {
-        label: "POST TO LINKEDIN",
-        href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-          url,
-        )}`,
-      },
-      {
-        label: "EMAIL A FRIEND",
-        href: `mailto:?subject=${encodeURIComponent(
-          title,
-        )}&body=${encodeURIComponent(url)}`,
-      },
-    ];
+  const items: Array<{ label: string; href?: string; onClick?: () => void }> = [
+    { label: copied ? "COPIED ✓" : "COPY LINK", onClick: onCopy },
+    {
+      label: "POST TO X",
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+        title,
+      )}&url=${encodeURIComponent(url)}`,
+    },
+    {
+      label: "POST TO LINKEDIN",
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+        url,
+      )}`,
+    },
+    {
+      label: "EMAIL A FRIEND",
+      href: `mailto:?subject=${encodeURIComponent(
+        title,
+      )}&body=${encodeURIComponent(url)}`,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-2">

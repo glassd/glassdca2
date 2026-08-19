@@ -1,8 +1,14 @@
 import { useMemo } from "react";
+import { Link } from "react-router";
 import type { Route } from "./+types/projects";
 import { seoMeta } from "~/lib/seo";
 import { urlFor } from "../lib/sanity";
 import { listProjects } from "~/lib/queries.server";
+import {
+  deriveStatus,
+  projectYear,
+  type ProjectCard as Project,
+} from "../lib/projects";
 
 export function meta(_args: Route.MetaArgs) {
   return seoMeta({
@@ -13,39 +19,10 @@ export function meta(_args: Route.MetaArgs) {
   });
 }
 
-type Project = {
-  _id: string;
-  title: string;
-  slug: { current: string };
-  mainImage?: any;
-  description?: string;
-  stack?: string[];
-  liveUrl?: string;
-  githubUrl?: string;
-  publishedAt?: string;
-};
-
 const META =
   "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
   "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
-
-function year(iso?: string) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return String(d.getFullYear());
-}
-
-function deriveStatus(p: Project): {
-  label: "LIVE" | "WIP" | "ARCHIVED";
-  color: string;
-} {
-  if (p.liveUrl) return { label: "LIVE", color: "text-sd-acid border-sd-acid" };
-  if (p.githubUrl)
-    return { label: "WIP", color: "text-sd-fg border-sd-fg" };
-  return { label: "ARCHIVED", color: "text-sd-faint border-sd-faint" };
-}
 
 export async function loader() {
   try {
@@ -86,7 +63,9 @@ export default function Projects({ loaderData }: Route.ComponentProps) {
         {projects.length === 0 ? (
           <div className="grid place-items-center border border-sd-rule2 py-16 text-center">
             <span className={META}>
-              {error ? `LOAD FAILED — ${error.toUpperCase()}` : "NO PROJECTS YET"}
+              {error
+                ? `LOAD FAILED — ${error.toUpperCase()}`
+                : "NO PROJECTS YET"}
             </span>
           </div>
         ) : (
@@ -112,12 +91,17 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   }, [project.mainImage]);
 
   const num = String(index + 1).padStart(2, "0");
-  const fig = String(index + 1).padStart(2, "0");
-  const yr = year(project.publishedAt);
+  const yr = projectYear(project.publishedAt);
   const status = deriveStatus(project);
 
+  // The whole card is one internal link. Live-site and source links used
+  // to sit here and sent visitors off-domain before they'd read anything;
+  // they now live on the case study itself.
   return (
-    <article className="group flex flex-col bg-sd-bg p-5 transition-colors duration-150 hover:bg-[#0e0e0e] md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7">
+    <Link
+      to={`/projects/${project.slug}`}
+      className="group flex flex-col bg-sd-bg p-5 no-underline transition-colors duration-150 hover:bg-[#0e0e0e] md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7"
+    >
       {/* Cover */}
       <div className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel md:w-[220px] md:shrink-0 md:self-start xl:w-full">
         {cover ? (
@@ -131,7 +115,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <DiagonalStripePattern />
         )}
         <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
-          FIG. {fig}
+          FIG. {num}
         </span>
       </div>
 
@@ -156,7 +140,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         </h2>
 
         {project.description && (
-          <p className="mt-5 line-clamp-4 text-[14px] leading-[1.6] text-sd-dim md:text-[15px]">
+          <p className="mt-5 line-clamp-4 text-[14px] leading-[1.6] text-sd-dim">
             {project.description}
           </p>
         )}
@@ -174,30 +158,13 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-6">
-          {project.liveUrl && (
-            <a
-              href={project.liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${META_ACID} font-semibold hover:underline`}
-            >
-              LIVE ↗
-            </a>
-          )}
-          {project.githubUrl && (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg transition-colors hover:text-sd-acid"
-            >
-              GITHUB ↗
-            </a>
-          )}
+        <div className="mt-auto flex items-center gap-2 pt-6">
+          <span className={`${META_ACID} font-semibold`}>
+            READ CASE STUDY →
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 

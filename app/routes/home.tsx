@@ -28,12 +28,12 @@ export function meta(_args: Route.MetaArgs) {
       url: "/",
     }),
     {
-      "script:ld+json": JSON.stringify({
+      "script:ld+json": {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: SITE_NAME,
         url: SITE_URL,
-      }),
+      },
     },
   ];
 }
@@ -83,7 +83,11 @@ function buildStats(
 ): Array<{ n: string; label: string; to?: string }> {
   return [
     { n: s ? `${s.years} yrs` : "—", label: "BUILDING SOFTWARE" },
-    { n: s ? pad2(s.projects) : "—", label: "SHIPPED PROJECTS", to: "/projects" },
+    {
+      n: s ? pad2(s.projects) : "—",
+      label: "SHIPPED PROJECTS",
+      to: "/projects",
+    },
     { n: s ? pad2(s.posts) : "—", label: "ESSAYS PUBLISHED", to: "/blog" },
     { n: "∞", label: "CUPS OF COFFEE" },
   ];
@@ -139,8 +143,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <h2 className="font-sd-display text-[22px] font-medium leading-[1.1] tracking-[-0.02em] text-sd-fg md:text-[28px] md:leading-[1.05] xl:text-[32px]">
             Full-stack engineer
             <br />
-            shipping{" "}
-            <span className="italic text-sd-acid">opinionated</span> software
+            shipping <span className="italic text-sd-acid">
+              opinionated
+            </span>{" "}
+            software
             <br />
             on the open web.
           </h2>
@@ -225,8 +231,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                   (i % 4 === 2 ? "text-sd-acid" : "text-sd-fg")
                 }
               >
-                {t}{" "}
-                <span className="mx-3 font-normal text-sd-faint">●</span>
+                {t} <span className="mx-3 font-normal text-sd-faint">●</span>
               </span>
             ))}
           </div>
@@ -237,10 +242,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="mb-[22px] flex items-baseline">
             <span className={META}>§ 02 — LATEST DISPATCHES</span>
             <div className="mx-[18px] h-px flex-1 bg-sd-rule2" />
-            <Link
-              to="/blog"
-              className={`${META} text-sd-acid hover:underline`}
-            >
+            <Link to="/blog" className={`${META} text-sd-acid hover:underline`}>
               VIEW ALL ↗
             </Link>
           </div>
@@ -307,4 +309,3 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
     </Link>
   );
 }
-

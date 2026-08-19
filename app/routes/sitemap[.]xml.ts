@@ -1,18 +1,16 @@
 import { client } from "../lib/sanity";
 import { SITE_URL } from "../lib/seo";
+import { listProjectSlugs } from "../lib/queries.server";
 
 export async function loader() {
-  const slugs = await client.fetch<string[]>(
-    `*[_type == "post" && defined(publishedAt)] | order(publishedAt desc) { "slug": slug.current }.slug`
-  );
+  const [slugs, projectSlugs] = await Promise.all([
+    client.fetch<string[]>(
+      `*[_type == "post" && defined(publishedAt)] | order(publishedAt desc) { "slug": slug.current }.slug`,
+    ),
+    listProjectSlugs(),
+  ]);
 
-  const staticPages = [
-    "",
-    "/about",
-    "/projects",
-    "/blog",
-    "/contact",
-  ];
+  const staticPages = ["", "/about", "/projects", "/blog", "/contact"];
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -23,14 +21,21 @@ ${staticPages
     (path) => `  <url>
     <loc>${SITE_URL}${path}</loc>
     <lastmod>${today}</lastmod>
-  </url>`
+  </url>`,
+  )
+  .join("\n")}
+${projectSlugs
+  .map(
+    (slug) => `  <url>
+    <loc>${SITE_URL}/projects/${slug}</loc>
+  </url>`,
   )
   .join("\n")}
 ${slugs
   .map(
     (slug) => `  <url>
     <loc>${SITE_URL}/blog/${slug}</loc>
-  </url>`
+  </url>`,
   )
   .join("\n")}
 </urlset>`;

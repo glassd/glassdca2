@@ -84,19 +84,77 @@ export async function listTags() {
   return client.fetch<any[]>(query);
 }
 
+// Card-level fields. Kept in one place so the projects index, the home
+// page's featured strip, and the detail page's "more work" rail can't
+// drift apart. Slug is flattened to a string here to match how posts are
+// projected — the raw { current } shape only ever caused call-site noise.
+const PROJECT_CARD_PROJECTION = `{
+  _id,
+  title,
+  "slug": slug.current,
+  mainImage,
+  description,
+  stack,
+  liveUrl,
+  githubUrl,
+  publishedAt,
+  featured
+}`;
+
 export async function listProjects() {
-  const query = `*[_type == "project"] | order(publishedAt desc) {
+  const query = `*[_type == "project" && defined(slug.current)]
+    | order(publishedAt desc, _id desc) ${PROJECT_CARD_PROJECTION}`;
+  return client.fetch<any[]>(query);
+}
+
+export async function featuredProjects(count = 2) {
+  const query = `*[_type == "project" && defined(slug.current) && featured == true]
+    | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`;
+  return client.fetch<any[]>(query);
+}
+
+export async function listProjectSlugs() {
+  const query = `*[_type == "project" && defined(slug.current)]
+    | order(publishedAt desc, _id desc) { "slug": slug.current }.slug`;
+  return client.fetch<string[]>(query);
+}
+
+/**
+ * A project detail page plus the two neighbouring projects for the
+ * prev/next rail. Returns null when the slug doesn't resolve so the
+ * route can throw a proper 404 rather than rendering an empty shell.
+ */
+export async function getProject(slug: string) {
+  const projectQuery = `*[_type == "project" && slug.current == $slug][0]{
     _id,
     title,
-    slug,
+    "slug": slug.current,
     mainImage,
     description,
     stack,
     liveUrl,
     githubUrl,
-    publishedAt
+    publishedAt,
+    featured,
+    role,
+    timeframe,
+    outcome,
+    bodyMarkdown,
+    gallery
   }`;
-  return client.fetch<any[]>(query);
+
+  const project = await client.fetch<any | null>(projectQuery, { slug });
+  if (!project) return null;
+
+  const moreQuery = `*[_type == "project" && defined(slug.current) && slug.current != $slug]
+    | order(publishedAt desc, _id desc) [0...2] {
+      _id,
+      title,
+      "slug": slug.current
+    }`;
+  const more = await client.fetch<any[]>(moreQuery, { slug });
+
+  return { project, more };
 }
 
 export type SiteSettings = {
