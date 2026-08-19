@@ -39,31 +39,62 @@ but there is no UI to fill them in.
 
 ---
 
+## Databases
+
+Postgres runs as a **Dokploy Database service**, not inside a Compose
+file, for two reasons:
+
+- Dokploy's scheduled backups only apply to databases it manages. A
+  Postgres defined in `umami-compose.yml` would be invisible to them.
+- The fallback — snapshotting the data volume — is not a safe backup for
+  a running database. It can capture a torn, mid-write state that will
+  not restore. `pg_dump`, which the Database service runs, is
+  transactionally consistent.
+
+One Postgres instance is enough for both consumers:
+
+| Database    | Holds                        | Back up?                                        |
+| ----------- | ---------------------------- | ----------------------------------------------- |
+| `umami`     | All analytics history        | **Yes** — unrecoverable if lost                  |
+| `glassdca`  | Contact-form throttle state  | **No** — two tables, recreated on first use      |
+
+Create the second database once, by hand, against the same instance:
+
+    CREATE DATABASE glassdca;
+
+Enable scheduled backups on the service and point them at a bucket —
+Dokploy backs up to S3-compatible storage, so this needs a destination
+(OVH Object Storage, Backblaze B2, or similar) before it will do
+anything. **Test a restore once**, into a throwaway database. An untested
+backup is a guess.
+
+---
+
 ## Analytics (Umami)
 
-### 1. Stand up Umami
+### 1. Create the database
+
+A Postgres Database service in Dokploy, with backups enabled per above.
+Keep the connection string it generates.
+
+### 2. Stand up Umami
 
 Check Dokploy's template library first — if it carries Umami, use it and
-skip the compose file, since the template wires up Traefik and TLS for
-you.
+skip the compose file, since the template wires up Traefik and TLS.
 
-Otherwise create a **Compose** service in Dokploy pointed at
-`umami-compose.yml` in this directory. Dokploy routes through Traefik on
-its own network, so set the domain in Dokploy's UI rather than publishing
-ports; the commented `dokploy-network` block in the compose file covers
-this.
+Otherwise create a **Compose** service pointed at `umami-compose.yml` in
+this directory. It defines only the web service; the database is the one
+from step 1. Set in its environment:
 
-Set these in the service's environment:
-
-    UMAMI_DB_PASSWORD=<generated>
+    UMAMI_DATABASE_URL=<connection string from step 1>
     UMAMI_APP_SECRET=<openssl rand -base64 32>
 
-### 2. Point a hostname at it
+### 3. Point a hostname at it
 
 Give it its own subdomain (`stats.glassd.ca`) in Dokploy so Traefik
 issues a certificate. Do not serve it from the site's own domain.
 
-### 3. Wire the app to it
+### 4. Wire the app to it
 
 Log in, change the default admin credentials immediately, add `glassd.ca`
 as a website, and copy the generated ID into the app's environment in
@@ -100,13 +131,14 @@ Pageviews are automatic. Custom events are declared in
 `DATABASE_URL` makes the contact form's per-IP limits survive a deploy.
 Without it they reset every time the container restarts.
 
-Cleanest option is a **Postgres database service in Dokploy**, separate
-from Umami's, using the internal connection string Dokploy generates:
+Point it at the `glassdca` database created above, using Dokploy's
+internal connection string:
 
     DATABASE_URL=postgresql://user:pass@host:5432/glassdca
 
 The two tables are created on first use — there is no migration step, and
-losing them costs nothing, since they are pure throttling state.
+they are excluded from backups on purpose: they hold throttling state
+only, and are rebuilt automatically.
 
 ---
 
