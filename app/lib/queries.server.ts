@@ -208,8 +208,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-
-
 export async function siteStats() {
   const query = `{
     "projects": count(*[_type == "project"]),

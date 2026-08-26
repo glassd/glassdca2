@@ -132,9 +132,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
         {/* Hero */}
         <div>
-          <span className={`${META} mb-3 block md:mb-4`}>
-            INTRODUCTION
-          </span>
+          <span className={`${META} mb-3 block md:mb-4`}>INTRODUCTION</span>
           <h1 className="mt-0 font-sd-display text-[68px] font-bold leading-[0.88] tracking-[-0.03em] text-sd-fg md:text-[100px] md:leading-[0.86] xl:text-[144px]">
             DAVID
             <br />

@@ -41,10 +41,7 @@ function sanitizeHeaderValue(input: string): string {
  * - Truncate to a reasonable length
  */
 function sanitizeEmailAddress(input: string): string {
-  const cleaned = sanitizeHeaderValue(input).replace(
-    /[<>()[\]\\,;:"']/g,
-    "",
-  );
+  const cleaned = sanitizeHeaderValue(input).replace(/[<>()[\]\\,;:"']/g, "");
   return cleaned.slice(0, 254);
 }
 

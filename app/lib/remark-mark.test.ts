@@ -5,7 +5,9 @@ import { remarkMark } from "./remark-mark";
 function run(text: string) {
   const tree: Root = {
     type: "root",
-    children: [{ type: "paragraph", children: [{ type: "text", value: text }] }],
+    children: [
+      { type: "paragraph", children: [{ type: "text", value: text }] },
+    ],
   };
   const transform = (remarkMark as any)();
   transform(tree);

@@ -82,10 +82,12 @@ describe("throttleDuplicates", () => {
   it("allows different content from the same IP", () => {
     const ip = "dup-test-2";
     const now = 1_000_000;
-    expect(throttleDuplicatesInMemory(ip, now, hashContent("first")).ok).toBe(true);
-    expect(throttleDuplicatesInMemory(ip, now + 1, hashContent("second")).ok).toBe(
+    expect(throttleDuplicatesInMemory(ip, now, hashContent("first")).ok).toBe(
       true,
     );
+    expect(
+      throttleDuplicatesInMemory(ip, now + 1, hashContent("second")).ok,
+    ).toBe(true);
   });
 
   it("allows the same content after the window expires", () => {
@@ -135,7 +137,6 @@ describe("originAllowed", () => {
     expect(originAllowed(req({}), site)).toBe(true);
   });
 });
-
 
 // Production runs without DATABASE_URL until Postgres is stood up, and any
 // query failure takes the same path, so the fallback is the branch that
