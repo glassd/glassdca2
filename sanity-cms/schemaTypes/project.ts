@@ -113,7 +113,7 @@ export default defineType({
             group: 'study',
             rows: 3,
             description:
-                'What actually happened. Use real numbers where you have them — users, latency, uptime, time saved.',
+                'What actually happened — including when the answer is "nothing much". A build that found no traction, plus a clear reading of why, is worth more than a vague claim of success. Use real numbers only where they exist.',
         }),
         defineField({
             name: 'bodyMarkdown',
@@ -122,7 +122,7 @@ export default defineType({
             group: 'study',
             rows: 30,
             description:
-                'Four H2 sections, same order every time: Problem, Approach, Tradeoffs, Outcome. The Tradeoffs section is the one that matters — say what you rejected and why.',
+                'Four H2 sections, same order every time: Problem, Approach, Tradeoffs, Outcome. Tradeoffs is the one that matters — what you rejected and why. Outcome is for what happened, not for what you wish had happened.',
         }),
 
         // ─── Media ───
