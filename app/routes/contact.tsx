@@ -44,10 +44,7 @@ export async function action({
   const now = Date.now();
   const reqId = Math.random().toString(36).slice(2, 8);
 
-  console.log(`[contact:${reqId}] action start at ${now}`);
-
   const form = await request.formData();
-  console.log(`[contact:${reqId}] raw formData keys:`, Array.from(form.keys()));
 
   // Form fields
   const email = String(form.get("email") || "").trim();
@@ -58,17 +55,6 @@ export async function action({
   const company = String(form.get("company") || "").trim();
   const startedAtRaw = String(form.get("startedAt") || "0");
   const startedAt = Number(startedAtRaw);
-
-  console.log(`[contact:${reqId}] parsed fields`, {
-    email,
-    subjectLength: subject.length,
-    messageLength: message.length,
-    company,
-    startedAtRaw,
-    startedAt,
-    now,
-    deltaMs: now - startedAt,
-  });
 
   const publicSiteUrl = (process as any)?.env?.PUBLIC_SITE_URL;
   if (!originAllowed(request, publicSiteUrl)) {
@@ -87,14 +73,14 @@ export async function action({
     return { errors: { general: "Unable to process request." } };
   }
   if (looksLikeBot(request)) {
-    console.warn(`[contact:${reqId}] looksLikeBot returned true`, {
+    console.warn(`[contact:${reqId}] blocked as bot`, {
       ua: request.headers.get("user-agent"),
     });
     return { errors: { general: "Unable to process request." } };
   }
 
   if (isTooFast(now, startedAt)) {
-    console.warn(`[contact:${reqId}] isTooFast triggered`, {
+    console.warn(`[contact:${reqId}] submitted too fast`, {
       now,
       startedAt,
       deltaMs: now - startedAt,
@@ -124,12 +110,14 @@ export async function action({
   }
 
   const ip = getClientIp(request);
-  console.log(`[contact:${reqId}] client IP`, { ip });
+  // Logged as a short hash: enough to correlate repeat submissions across
+  // log lines, without writing a visitor's address to disk.
+  const ipRef = hashContent(ip).slice(0, 8);
 
   const rl = await rateLimit(ip, now);
   if (!rl.ok) {
-    console.warn(`[contact:${reqId}] rateLimit exceeded`, {
-      ip,
+    console.warn(`[contact:${reqId}] rate limit exceeded`, {
+      ipRef,
       retryAfterMs: rl.retryAfterMs,
     });
     return {
@@ -139,10 +127,7 @@ export async function action({
   const contentHash = hashContent(`${email}|${subject}|${message}`);
   const dup = await throttleDuplicates(ip, now, contentHash);
   if (!dup.ok) {
-    console.warn(`[contact:${reqId}] duplicate submission detected`, {
-      ip,
-      contentHash,
-    });
+    console.warn(`[contact:${reqId}] duplicate submission`, { ipRef });
     return {
       errors: {
         general:
@@ -150,12 +135,6 @@ export async function action({
       },
     };
   }
-
-  console.log(`[contact:${reqId}] passing abuse checks, about to send email`, {
-    email,
-    subject,
-    messageLength: message.length,
-  });
 
   const sendStart = Date.now();
   try {
