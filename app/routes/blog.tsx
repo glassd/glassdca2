@@ -507,7 +507,7 @@ export default function Blog({ loaderData }: Route.ComponentProps) {
       <div className="relative z-[2] mx-auto max-w-[1176px]">
         {/* Section label */}
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-          <span className={META}>§ 04 — FIELD NOTES</span>
+          <span className={META}>FIELD NOTES</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={META}>UPDATED MONTHLY · NO TRACKING</span>
         </div>

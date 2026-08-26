@@ -116,10 +116,23 @@ export async function listProjects() {
   return client.fetch<any[]>(query);
 }
 
+/**
+ * Projects for the home page's work strip. Falls back to the most recent
+ * projects when nothing is flagged, so the section is never empty — the
+ * home page should always show work, and a missing `featured` flag in the
+ * studio should not silently blank it.
+ */
 export async function featuredProjects(count = 2) {
-  const query = `*[_type == "project" && defined(slug.current) && featured == true]
-    | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`;
-  return client.fetch<any[]>(query);
+  const flagged = await client.fetch<any[]>(
+    `*[_type == "project" && defined(slug.current) && featured == true]
+      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+  );
+  if (flagged.length > 0) return flagged;
+
+  return client.fetch<any[]>(
+    `*[_type == "project" && defined(slug.current)]
+      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+  );
 }
 
 export async function listProjectSlugs() {
