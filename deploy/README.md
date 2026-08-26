@@ -96,9 +96,9 @@ can ship before any infrastructure exists:
 
 | Unset variable     | Behaviour                                          |
 | ------------------ | -------------------------------------------------- |
-| `UMAMI_SRC`        | No tracker injected. No script tag, no requests.    |
-| `UMAMI_WEBSITE_ID` | Same — both must be set for the tracker to render.  |
-| `DATABASE_URL`     | Rate limiting uses per-process memory, as before.   |
+| `UMAMI_SRC`        | No tracker injected. No script tag, no requests.   |
+| `UMAMI_WEBSITE_ID` | Same — both must be set for the tracker to render. |
+| `DATABASE_URL`     | Rate limiting uses per-process memory, as before.  |
 
 There is no ordering hazard: deploy first and switch things on later, or
 set them up first. Nothing throws when they are absent, and a database
@@ -132,10 +132,10 @@ file, for two reasons:
 
 One Postgres instance is enough for both consumers:
 
-| Database    | Holds                        | Back up?                                        |
-| ----------- | ---------------------------- | ----------------------------------------------- |
-| `umami`     | All analytics history        | **Yes** — unrecoverable if lost                  |
-| `glassdca`  | Contact-form throttle state  | **No** — two tables, recreated on first use      |
+| Database   | Holds                       | Back up?                                    |
+| ---------- | --------------------------- | ------------------------------------------- |
+| `umami`    | All analytics history       | **Yes** — unrecoverable if lost             |
+| `glassdca` | Contact-form throttle state | **No** — two tables, recreated on first use |
 
 Create the second database once, by hand, against the same instance:
 
@@ -165,8 +165,8 @@ and have it stay true.
 Pageviews are automatic. Custom events are declared in
 `app/lib/analytics.ts` and fired from the components that own them:
 
-| Event              | Fired from         | Answers                                     |
-| ------------------ | ------------------ | ------------------------------------------- |
+| Event              | Fired from         | Answers                                      |
+| ------------------ | ------------------ | -------------------------------------------- |
 | `project-outbound` | project case study | Which project pulls people through?          |
 | `contact-start`    | contact form       | How many people begin the form?              |
 | `contact-submit`   | contact form       | How many finish? (start − submit = drop-off) |
