@@ -11,9 +11,9 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 
 const TIMELINE: Array<[string, string]> = [
   ["2011", "Started CS degree."],
@@ -43,7 +43,7 @@ export default function About() {
       <div className="relative z-[2] mx-auto max-w-[1176px]">
         {/* Section label */}
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-          <span className={META}>§ 02 — ON THE AUTHOR</span>
+          <span className={META}>ON THE AUTHOR</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={META}>6 MIN · UPDATED 2026.05</span>
         </div>
@@ -69,8 +69,8 @@ export default function About() {
                 go home.
               </span>{" "}
               Lately, that doesn&apos;t feel like enough. The world&apos;s
-              changing too fast to just sit in the passenger seat, so this is
-              me trying to get back behind the wheel.
+              changing too fast to just sit in the passenger seat, so this is me
+              trying to get back behind the wheel.
             </p>
             <p className="my-[22px]">
               I went to school for software development, fully expecting to
@@ -79,15 +79,14 @@ export default function About() {
               building networks, and keeping other people&apos;s stuff running.
             </p>
             <p className="my-[22px]">
-              A couple of years ago I made the jump back to what I really
-              wanted to do: building software. That&apos;s what led to this
-              site.
+              A couple of years ago I made the jump back to what I really wanted
+              to do: building software. That&apos;s what led to this site.
             </p>
             <p className="my-[22px]">
               I&apos;m especially interested in AI right now — how it can
-              actually be useful, where it goes off the rails, and what it
-              means for the way we work and live. I&apos;ll keep building,
-              breaking things, and writing about what I learn.
+              actually be useful, where it goes off the rails, and what it means
+              for the way we work and live. I&apos;ll keep building, breaking
+              things, and writing about what I learn.
             </p>
           </div>
 
@@ -104,7 +103,7 @@ export default function About() {
                   }
                 >
                   <span
-                    className={`font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid`}
+                    className={`font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid`}
                   >
                     {y}
                   </span>
@@ -125,7 +124,7 @@ export default function About() {
                         ? "noopener noreferrer"
                         : undefined
                     }
-                    className="block border border-sd-rule2 px-2.5 py-2 font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
+                    className="block border border-sd-rule2 px-2.5 py-2 font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-fg no-underline transition-colors hover:border-sd-acid hover:text-sd-acid"
                   >
                     {it.label}
                   </a>

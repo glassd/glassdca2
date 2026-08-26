@@ -39,7 +39,10 @@ export default function SDNav() {
         to="/"
         className="flex shrink-0 items-center gap-[10px] font-sd-display text-[20px] font-bold tracking-[-0.04em] text-sd-fg md:text-[22px]"
       >
-        <span aria-hidden className="inline-block h-[10px] w-[10px] bg-sd-acid" />
+        <span
+          aria-hidden
+          className="inline-block h-[10px] w-[10px] bg-sd-acid"
+        />
         <span>
           GLASSD<span className="text-sd-acid">/</span>CA
         </span>
@@ -125,10 +128,7 @@ export default function SDNav() {
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.to, pathname);
               return (
-                <li
-                  key={item.label}
-                  className="border-b border-sd-rule2"
-                >
+                <li key={item.label} className="border-b border-sd-rule2">
                   <Link
                     to={item.to}
                     onClick={() => setOpen(false)}

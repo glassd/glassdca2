@@ -5,7 +5,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        "sd-display": ["Bricolage Grotesque Variable", "system-ui", "sans-serif"],
+        "sd-display": [
+          "Bricolage Grotesque Variable",
+          "system-ui",
+          "sans-serif",
+        ],
         "sd-sans": ["Geist Variable", "system-ui", "sans-serif"],
         "sd-mono": ["JetBrains Mono Variable", "ui-monospace", "monospace"],
       },
@@ -26,10 +30,6 @@ export default {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
-        "sd-marquee": {
-          from: { transform: "translateX(0)" },
-          to: { transform: "translateX(-50%)" },
-        },
         "sd-pulse": {
           "0%, 100%": { transform: "scale(1)", opacity: "1" },
           "50%": { transform: "scale(0.8)", opacity: "0.5" },
@@ -37,7 +37,6 @@ export default {
       },
       animation: {
         "fade-in": "fade-in 0.6s ease-out both",
-        "sd-marquee": "sd-marquee 24s linear infinite",
         "sd-pulse": "sd-pulse 1.6s ease-in-out infinite",
       },
     },

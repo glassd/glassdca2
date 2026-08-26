@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Route } from "./+types/contact";
 import { seoMeta } from "~/lib/seo";
 import { Form, useActionData, useNavigation } from "react-router";
 import { sendContactEmail } from "../lib/email.server";
 import { getSiteSettings } from "~/lib/queries.server";
+import { EVENTS, track } from "../lib/analytics";
 import {
   getClientIp,
   looksLikeBot,
@@ -43,10 +44,7 @@ export async function action({
   const now = Date.now();
   const reqId = Math.random().toString(36).slice(2, 8);
 
-  console.log(`[contact:${reqId}] action start at ${now}`);
-
   const form = await request.formData();
-  console.log(`[contact:${reqId}] raw formData keys:`, Array.from(form.keys()));
 
   // Form fields
   const email = String(form.get("email") || "").trim();
@@ -57,17 +55,6 @@ export async function action({
   const company = String(form.get("company") || "").trim();
   const startedAtRaw = String(form.get("startedAt") || "0");
   const startedAt = Number(startedAtRaw);
-
-  console.log(`[contact:${reqId}] parsed fields`, {
-    email,
-    subjectLength: subject.length,
-    messageLength: message.length,
-    company,
-    startedAtRaw,
-    startedAt,
-    now,
-    deltaMs: now - startedAt,
-  });
 
   const publicSiteUrl = (process as any)?.env?.PUBLIC_SITE_URL;
   if (!originAllowed(request, publicSiteUrl)) {
@@ -86,14 +73,14 @@ export async function action({
     return { errors: { general: "Unable to process request." } };
   }
   if (looksLikeBot(request)) {
-    console.warn(`[contact:${reqId}] looksLikeBot returned true`, {
+    console.warn(`[contact:${reqId}] blocked as bot`, {
       ua: request.headers.get("user-agent"),
     });
     return { errors: { general: "Unable to process request." } };
   }
 
   if (isTooFast(now, startedAt)) {
-    console.warn(`[contact:${reqId}] isTooFast triggered`, {
+    console.warn(`[contact:${reqId}] submitted too fast`, {
       now,
       startedAt,
       deltaMs: now - startedAt,
@@ -123,12 +110,14 @@ export async function action({
   }
 
   const ip = getClientIp(request);
-  console.log(`[contact:${reqId}] client IP`, { ip });
+  // Logged as a short hash: enough to correlate repeat submissions across
+  // log lines, without writing a visitor's address to disk.
+  const ipRef = hashContent(ip).slice(0, 8);
 
-  const rl = rateLimit(ip, now);
+  const rl = await rateLimit(ip, now);
   if (!rl.ok) {
-    console.warn(`[contact:${reqId}] rateLimit exceeded`, {
-      ip,
+    console.warn(`[contact:${reqId}] rate limit exceeded`, {
+      ipRef,
       retryAfterMs: rl.retryAfterMs,
     });
     return {
@@ -136,12 +125,9 @@ export async function action({
     };
   }
   const contentHash = hashContent(`${email}|${subject}|${message}`);
-  const dup = throttleDuplicates(ip, now, contentHash);
+  const dup = await throttleDuplicates(ip, now, contentHash);
   if (!dup.ok) {
-    console.warn(`[contact:${reqId}] duplicate submission detected`, {
-      ip,
-      contentHash,
-    });
+    console.warn(`[contact:${reqId}] duplicate submission`, { ipRef });
     return {
       errors: {
         general:
@@ -149,12 +135,6 @@ export async function action({
       },
     };
   }
-
-  console.log(`[contact:${reqId}] passing abuse checks, about to send email`, {
-    email,
-    subject,
-    messageLength: message.length,
-  });
 
   const sendStart = Date.now();
   try {
@@ -186,11 +166,11 @@ export async function action({
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 const FIELD_LABEL =
-  "block font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "block font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 const CONTACT_CARDS: Array<[string, string]> = [
   ["DIRECT", "HELLO@GLASSD.CA"],
@@ -214,14 +194,23 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
     setStartedAt(Date.now());
   }, []);
 
+  // Fires once per page view, on first interaction with any field, so the
+  // start/submit pair measures abandonment rather than field focus churn.
+  const startTracked = useRef(false);
+  const onFirstInteraction = () => {
+    if (startTracked.current) return;
+    startTracked.current = true;
+    track(EVENTS.contactStart);
+  };
+
   return (
     <div className="relative px-[18px] pb-6 pt-7 md:px-7 md:pt-9 xl:px-8 xl:pt-12">
       <div className="relative z-[2] mx-auto max-w-[1176px]">
         {/* Section label */}
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-          <span className={META}>§ 05 — TRANSMIT</span>
+          <span className={META}>TRANSMIT</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
-          <span className={META}>REPLIES IN ≤ 24H · NO TRACKING</span>
+          <span className={META}>REPLIES IN ≤ 24H · NO COOKIES</span>
         </div>
 
         {/* Hero */}
@@ -238,8 +227,8 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
           <div>
             <p className="m-0 max-w-[460px] text-[14px] leading-[1.65] text-sd-dim md:text-[16px]">
               Project inquiries, recruiting, or just &ldquo;hey I liked your
-              post&rdquo; — all welcome. I read everything and reply within
-              a day.
+              post&rdquo; — all welcome. I read everything and reply within a
+              day.
             </p>
 
             <div className="mt-9 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule">
@@ -278,14 +267,20 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
               <ol className="m-0 list-none border-t border-sd-rule p-0">
                 {[
                   ["01", "I read it. Every message, same day."],
-                  ["02", "You get a reply within 24 hours — usually with a call link if it's a project."],
-                  ["03", "If we're a fit, we scope it and pick a first ship date."],
+                  [
+                    "02",
+                    "You get a reply within 24 hours — usually with a call link if it's a project.",
+                  ],
+                  [
+                    "03",
+                    "If we're a fit, we scope it and pick a first ship date.",
+                  ],
                 ].map(([n, text]) => (
                   <li
                     key={n}
                     className="flex items-baseline gap-3 border-b border-sd-rule py-2.5"
                   >
-                    <span className="font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+                    <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
                       {n}
                     </span>
                     <span className="text-[13px] leading-[1.5] text-sd-dim">
@@ -315,6 +310,8 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
                 method="post"
                 replace
                 noValidate
+                onFocusCapture={onFirstInteraction}
+                onSubmit={() => track(EVENTS.contactSubmit)}
                 className="flex flex-col gap-[26px]"
               >
                 {/* Honeypot */}
@@ -442,7 +439,7 @@ function FormField({
         />
       )}
       {error && (
-        <p className="mt-1.5 font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
+        <p className="mt-1.5 font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
           {error}
         </p>
       )}

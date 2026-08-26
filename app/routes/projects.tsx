@@ -1,8 +1,14 @@
 import { useMemo } from "react";
+import { Link } from "react-router";
 import type { Route } from "./+types/projects";
 import { seoMeta } from "~/lib/seo";
 import { urlFor } from "../lib/sanity";
 import { listProjects } from "~/lib/queries.server";
+import {
+  deriveStatus,
+  projectYear,
+  type ProjectCard as Project,
+} from "../lib/projects";
 
 export function meta(_args: Route.MetaArgs) {
   return seoMeta({
@@ -13,39 +19,10 @@ export function meta(_args: Route.MetaArgs) {
   });
 }
 
-type Project = {
-  _id: string;
-  title: string;
-  slug: { current: string };
-  mainImage?: any;
-  description?: string;
-  stack?: string[];
-  liveUrl?: string;
-  githubUrl?: string;
-  publishedAt?: string;
-};
-
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 const META_ACID =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-acid";
-
-function year(iso?: string) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return String(d.getFullYear());
-}
-
-function deriveStatus(p: Project): {
-  label: "LIVE" | "WIP" | "ARCHIVED";
-  color: string;
-} {
-  if (p.liveUrl) return { label: "LIVE", color: "text-sd-acid border-sd-acid" };
-  if (p.githubUrl)
-    return { label: "WIP", color: "text-sd-fg border-sd-fg" };
-  return { label: "ARCHIVED", color: "text-sd-faint border-sd-faint" };
-}
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 
 export async function loader() {
   try {
@@ -69,7 +46,7 @@ export default function Projects({ loaderData }: Route.ComponentProps) {
       <div className="relative z-[2] mx-auto max-w-[1176px]">
         {/* Section label */}
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-          <span className={META}>§ 03 — WORK</span>
+          <span className={META}>WORK</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={META}>
             {count > 0
@@ -86,7 +63,9 @@ export default function Projects({ loaderData }: Route.ComponentProps) {
         {projects.length === 0 ? (
           <div className="grid place-items-center border border-sd-rule2 py-16 text-center">
             <span className={META}>
-              {error ? `LOAD FAILED — ${error.toUpperCase()}` : "NO PROJECTS YET"}
+              {error
+                ? `LOAD FAILED — ${error.toUpperCase()}`
+                : "NO PROJECTS YET"}
             </span>
           </div>
         ) : (
@@ -112,26 +91,47 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   }, [project.mainImage]);
 
   const num = String(index + 1).padStart(2, "0");
-  const fig = String(index + 1).padStart(2, "0");
-  const yr = year(project.publishedAt);
+  const yr = projectYear(project.publishedAt);
   const status = deriveStatus(project);
 
+  // The grid is two-up, so the first row is above the fold on every
+  // breakpoint. Lazy-loading those meant first paint was empty boxes —
+  // the covers are the whole point of the page, so they load eagerly.
+  const isAboveFold = index < 2;
+
+  // The whole card is one internal link. Live-site and source links used
+  // to sit here and sent visitors off-domain before they'd read anything;
+  // they now live on the case study itself.
   return (
-    <article className="group flex flex-col bg-sd-bg p-5 transition-colors duration-150 hover:bg-[#0e0e0e] md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7">
+    <Link
+      to={`/projects/${project.slug}`}
+      className="group flex flex-col bg-sd-bg p-5 no-underline transition-colors duration-150 hover:bg-[#0e0e0e] md:flex-row md:gap-6 md:p-6 xl:flex-col xl:p-7"
+    >
       {/* Cover */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel md:w-[220px] md:shrink-0 md:self-start xl:w-full">
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel bg-cover bg-center md:w-[220px] md:shrink-0 md:self-start xl:w-full"
+        style={
+          project.mainImage?.lqip
+            ? { backgroundImage: `url(${project.mainImage.lqip})` }
+            : undefined
+        }
+      >
         {cover ? (
           <img
             src={cover}
             alt={project.mainImage?.alt || project.title}
-            loading="lazy"
+            loading={isAboveFold ? "eager" : "lazy"}
+            fetchPriority={isAboveFold ? "high" : undefined}
+            decoding={isAboveFold ? "sync" : "async"}
+            width={960}
+            height={600}
             className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
           />
         ) : (
           <DiagonalStripePattern />
         )}
-        <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-acid">
-          FIG. {fig}
+        <span className="absolute left-2.5 top-2.5 z-10 border border-sd-acid bg-sd-bg px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
+          FIG. {num}
         </span>
       </div>
 
@@ -143,7 +143,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <span className="flex-1" />
           <span
             className={
-              "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] " +
+              "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] " +
               status.color
             }
           >
@@ -156,7 +156,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
         </h2>
 
         {project.description && (
-          <p className="mt-5 line-clamp-4 text-[14px] leading-[1.6] text-sd-dim md:text-[15px]">
+          <p className="mt-5 line-clamp-4 text-[14px] leading-[1.6] text-sd-dim">
             {project.description}
           </p>
         )}
@@ -166,7 +166,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             {project.stack.map((s) => (
               <span
                 key={s}
-                className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim"
+                className="inline-flex items-center border border-sd-rule2 px-2 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim"
               >
                 {s}
               </span>
@@ -174,30 +174,13 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           </div>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-6">
-          {project.liveUrl && (
-            <a
-              href={project.liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${META_ACID} font-semibold hover:underline`}
-            >
-              LIVE ↗
-            </a>
-          )}
-          {project.githubUrl && (
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-fg transition-colors hover:text-sd-acid"
-            >
-              GITHUB ↗
-            </a>
-          )}
+        <div className="mt-auto flex items-center gap-2 pt-6">
+          <span className={`${META_ACID} font-semibold`}>
+            READ CASE STUDY →
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 

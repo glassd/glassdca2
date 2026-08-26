@@ -14,7 +14,7 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 
 export default function ContactSent() {
   return (
@@ -22,7 +22,7 @@ export default function ContactSent() {
       <div className="relative z-[2] mx-auto max-w-[1176px]">
         {/* Section label */}
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
-          <span className={META}>§ 05.01 — TRANSMITTED</span>
+          <span className={META}>TRANSMITTED</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={META}>EXPECT REPLY ≤ 24H</span>
         </div>
@@ -35,8 +35,8 @@ export default function ContactSent() {
         </h1>
 
         <p className="mb-10 max-w-[640px] text-[15px] leading-[1.7] text-sd-dim md:text-[17px]">
-          Thanks for reaching out. Your message was delivered and I&apos;ll
-          get back to you as soon as I can — usually within a day.
+          Thanks for reaching out. Your message was delivered and I&apos;ll get
+          back to you as soon as I can — usually within a day.
         </p>
 
         <div className="grid grid-cols-1 gap-3 md:flex md:flex-wrap md:gap-3">

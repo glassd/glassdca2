@@ -8,11 +8,15 @@
  * - User-Agent bot detection using `isbot`
  *
  * Notes:
- * - This implementation keeps counters in memory (per server process).
- *   For multi-instance deployments or serverless/edge, use a shared store (Redis/KV) instead.
+ * - Counters live in Postgres when DATABASE_URL is set, so they survive a
+ *   deploy and hold across instances. Without it — and whenever a query
+ *   fails — they fall back to per-process memory, which is the original
+ *   behaviour. The contact form must never fail closed because the
+ *   database is unreachable.
  */
 
 import { isbot } from "isbot";
+import { ensureSchema, getSql } from "./db.server";
 
 /**
  * Configuration via environment variables (with sensible defaults).
@@ -97,7 +101,7 @@ export type RateLimitResult =
  * - Increments the counter for the given IP.
  * - Returns { ok: false, retryAfterMs } if limit exceeded.
  */
-export function rateLimit(ip: string, now: number): RateLimitResult {
+export function rateLimitInMemory(ip: string, now: number): RateLimitResult {
   const current = ipBuckets.get(ip);
 
   // Initialize or reset expired bucket
@@ -116,13 +120,60 @@ export function rateLimit(ip: string, now: number): RateLimitResult {
   return { ok: true };
 }
 
+/**
+ * Sliding-window rate limiting per IP, durable when a database is
+ * configured. The counter is incremented and read in a single atomic
+ * upsert so concurrent submissions can't both slip under the limit.
+ */
+export async function rateLimit(
+  ip: string,
+  now: number,
+): Promise<RateLimitResult> {
+  const db = getSql();
+  if (!db) return rateLimitInMemory(ip, now);
+
+  try {
+    await ensureSchema(db);
+    const expiresAt = new Date(now + RATE_LIMIT_WINDOW_MS);
+    const nowTs = new Date(now);
+
+    const [row] = await db<{ count: number; expires_at: Date }[]>`
+      INSERT INTO rate_limit (key, count, expires_at)
+      VALUES (${ip}, 1, ${expiresAt})
+      ON CONFLICT (key) DO UPDATE SET
+        count = CASE
+          WHEN rate_limit.expires_at <= ${nowTs} THEN 1
+          ELSE rate_limit.count + 1
+        END,
+        expires_at = CASE
+          WHEN rate_limit.expires_at <= ${nowTs} THEN ${expiresAt}
+          ELSE rate_limit.expires_at
+        END
+      RETURNING count, expires_at
+    `;
+
+    if (row && row.count > RATE_LIMIT_MAX) {
+      return {
+        ok: false,
+        retryAfterMs: Math.max(0, row.expires_at.getTime() - now),
+      };
+    }
+    return { ok: true };
+  } catch (error) {
+    console.error("[abuse] rateLimit query failed, using memory:", {
+      message: (error as Error)?.message || String(error),
+    });
+    return rateLimitInMemory(ip, now);
+  }
+}
+
 export type DuplicateResult = { ok: true } | { ok: false };
 
 /**
  * Throttle exact duplicate submissions (by content hash) within the rate limit window.
  * - If the same IP submits the same hash within the window, returns { ok: false }.
  */
-export function throttleDuplicates(
+export function throttleDuplicatesInMemory(
   ip: string,
   now: number,
   bodyHash: string,
@@ -137,6 +188,46 @@ export function throttleDuplicates(
   // Opportunistic cleanup
   cleanupExpired(ipLastHash, now);
   return { ok: true };
+}
+
+/**
+ * Throttle exact duplicate submissions (by content hash) within the
+ * window, durable when a database is configured.
+ */
+export async function throttleDuplicates(
+  ip: string,
+  now: number,
+  bodyHash: string,
+): Promise<DuplicateResult> {
+  const db = getSql();
+  if (!db) return throttleDuplicatesInMemory(ip, now, bodyHash);
+
+  try {
+    await ensureSchema(db);
+    const expiresAt = new Date(now + RATE_LIMIT_WINDOW_MS);
+    const nowTs = new Date(now);
+
+    // Only rows that are still live and carry a different hash may be
+    // overwritten; a live row with the same hash leaves nothing updated,
+    // which is exactly the duplicate case.
+    const rows = await db<{ key: string }[]>`
+      INSERT INTO submission_hash (key, hash, expires_at)
+      VALUES (${ip}, ${bodyHash}, ${expiresAt})
+      ON CONFLICT (key) DO UPDATE SET
+        hash = ${bodyHash},
+        expires_at = ${expiresAt}
+      WHERE submission_hash.expires_at <= ${nowTs}
+         OR submission_hash.hash <> ${bodyHash}
+      RETURNING key
+    `;
+
+    return rows.length > 0 ? { ok: true } : { ok: false };
+  } catch (error) {
+    console.error("[abuse] throttleDuplicates query failed, using memory:", {
+      message: (error as Error)?.message || String(error),
+    });
+    return throttleDuplicatesInMemory(ip, now, bodyHash);
+  }
 }
 
 /**

@@ -12,7 +12,11 @@
     --sd-panel: #111111;
     --sd-fg: #fafafa;
     --sd-dim: #a8a8a8;
-    --sd-faint: #5a5a5a;
+    /* Meta labels — section markers, dates, tags, stat captions — all use
+       --sd-faint, so it is body text rather than decoration. #5a5a5a gave
+       2.9:1 against --sd-bg and failed WCAG AA (4.5:1) and even the 3:1
+       large-text floor; #8a8a8a lands at ~5.7:1. */
+    --sd-faint: #8a8a8a;
     --sd-rule: #1a1a1a;
     --sd-rule2: #2a2a2a;
     --sd-acid: #d8ff3a;

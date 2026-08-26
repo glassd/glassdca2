@@ -12,7 +12,13 @@ type SeoMetaOptions = {
 
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
-export function seoMeta({ title, description, url, ogImage, type = "website" }: SeoMetaOptions) {
+export function seoMeta({
+  title,
+  description,
+  url,
+  ogImage,
+  type = "website",
+}: SeoMetaOptions) {
   const canonical = `${SITE_URL}${url}`;
   const image = ogImage || DEFAULT_OG_IMAGE;
   const meta: any[] = [

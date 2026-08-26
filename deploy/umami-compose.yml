@@ -1,0 +1,42 @@
+# Umami web service for glassd.ca.
+#
+# Deliberately does NOT define its own Postgres. The database is created
+# as a Dokploy **Database service** instead, because Dokploy's scheduled
+# backups only apply to databases it manages — a Postgres defined in this
+# file would be invisible to them, and snapshotting a running database's
+# volume is not a safe substitute (it can capture a torn, unrestorable
+# state). See README.md.
+#
+# Deploy as a Compose service in Dokploy, separate from the app, so the
+# two restart independently and a site deploy never interrupts
+# collection. Check Dokploy's template library first — if it carries
+# Umami, prefer the template.
+#
+# Routing: Dokploy fronts services with Traefik on its own network, so no
+# ports are published. Set the domain (stats.glassd.ca) in Dokploy's UI
+# and it handles the route and the certificate.
+#
+# Required environment (set in Dokploy's UI):
+#   UMAMI_DATABASE_URL  connection string from the Dokploy database service
+#   UMAMI_APP_SECRET    openssl rand -base64 32
+
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      # No default — an unset connection string should fail loudly rather
+      # than start Umami pointed at nothing.
+      DATABASE_URL: ${UMAMI_DATABASE_URL:?set UMAMI_DATABASE_URL}
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET}
+      TRACKER_SCRIPT_NAME: script.js
+    # ports:
+    #   - "127.0.0.1:3000:3000"
+    # Uncomment when Dokploy expects services on its shared network and
+    # the UI has not attached this stack for you.
+    # networks:
+    #   - dokploy-network
+
+# networks:
+#   dokploy-network:
+#     external: true

@@ -1,7 +1,15 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/home";
 import { seoMeta, SITE_URL, SITE_NAME } from "~/lib/seo";
-import { getSiteSettings, latestPosts, siteStats } from "~/lib/queries.server";
+import {
+  featuredProjects,
+  getSiteSettings,
+  latestPosts,
+  siteStats,
+} from "~/lib/queries.server";
+import { CAREER_START_YEAR } from "~/lib/site";
+import { urlFor } from "~/lib/sanity";
+import { deriveStatus, type ProjectCard } from "~/lib/projects";
 
 type Tag = {
   _id: string;
@@ -28,33 +36,18 @@ export function meta(_args: Route.MetaArgs) {
       url: "/",
     }),
     {
-      "script:ld+json": JSON.stringify({
+      "script:ld+json": {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: SITE_NAME,
         url: SITE_URL,
-      }),
+      },
     },
   ];
 }
 
 const META =
-  "font-sd-mono text-[10px] uppercase tracking-[0.1em] text-sd-faint";
-const MARQUEE_TOKENS = [
-  "SHIP SMALL",
-  "REACT",
-  "TYPESCRIPT",
-  "POSTGRES",
-  "THINK LOUD",
-  "TAILWIND",
-  "AWS",
-  "MIGRATE OFTEN",
-  "GRAPHQL",
-  "NODE",
-  "MEDITATE",
-  "BUILD WEIRD STUFF",
-];
-
+  "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-faint";
 type Stats = {
   years: number;
   projects: number;
@@ -64,13 +57,23 @@ type Stats = {
 export async function loader() {
   const settings = await getSiteSettings();
   try {
-    const [posts, stats] = await Promise.all([latestPosts(3), siteStats()]);
-    return { posts, stats, settings, error: false };
+    const [posts, stats, featured] = await Promise.all([
+      latestPosts(3),
+      siteStats(),
+      featuredProjects(2),
+    ]);
+    return { posts, stats, featured, settings, error: false };
   } catch (error: any) {
     console.error("[Home] Failed to load data:", {
       message: error?.message || String(error),
     });
-    return { posts: null, stats: null, settings, error: true };
+    return {
+      posts: null,
+      stats: null,
+      featured: [],
+      settings,
+      error: true,
+    };
   }
 }
 
@@ -81,11 +84,16 @@ function pad2(n: number) {
 function buildStats(
   s: Stats | null,
 ): Array<{ n: string; label: string; to?: string }> {
+  // Every cell has to be a number someone could check. The joke cell that
+  // used to sit here made the two load-bearing figures read as decoration.
   return [
-    { n: s ? `${s.years} yrs` : "—", label: "BUILDING SOFTWARE" },
-    { n: s ? pad2(s.projects) : "—", label: "SHIPPED PROJECTS", to: "/projects" },
+    { n: s ? `${s.years} yrs` : "—", label: "IN TECHNOLOGY" },
+    {
+      n: s ? pad2(s.projects) : "—",
+      label: "SHIPPED PROJECTS",
+      to: "/projects",
+    },
     { n: s ? pad2(s.posts) : "—", label: "ESSAYS PUBLISHED", to: "/blog" },
-    { n: "∞", label: "CUPS OF COFFEE" },
   ];
 }
 
@@ -100,7 +108,7 @@ function formatDispatchDate(iso?: string | null) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { posts, stats, settings, error } = loaderData;
+  const { posts, stats, featured, settings, error } = loaderData;
 
   const statRows = buildStats(stats);
 
@@ -110,12 +118,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         {/* Top meta strip */}
         <div className="mb-7 flex flex-wrap items-center gap-x-[18px] gap-y-2 md:mb-9">
           {settings.available && (
-            <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
+            <span className="inline-flex items-center gap-[6px] border border-sd-rule2 px-[10px] py-[5px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
               <span className="inline-block h-1.5 w-1.5 animate-sd-pulse rounded-full bg-sd-acid" />
               {settings.availabilityLabel}
             </span>
           )}
-          <span className={META}>SHIPPING SINCE 2012</span>
+          <span className={META}>IN TECHNOLOGY SINCE {CAREER_START_YEAR}</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
           <span className={`${META} hidden md:inline`}>
             FULL-STACK · IC · REMOTE-FIRST
@@ -124,9 +132,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 
         {/* Hero */}
         <div>
-          <span className={`${META} mb-3 block md:mb-4`}>
-            § 01 — INTRODUCTION
-          </span>
+          <span className={`${META} mb-3 block md:mb-4`}>INTRODUCTION</span>
           <h1 className="mt-0 font-sd-display text-[68px] font-bold leading-[0.88] tracking-[-0.03em] text-sd-fg md:text-[100px] md:leading-[0.86] xl:text-[144px]">
             DAVID
             <br />
@@ -139,8 +145,10 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <h2 className="font-sd-display text-[22px] font-medium leading-[1.1] tracking-[-0.02em] text-sd-fg md:text-[28px] md:leading-[1.05] xl:text-[32px]">
             Full-stack engineer
             <br />
-            shipping{" "}
-            <span className="italic text-sd-acid">opinionated</span> software
+            shipping <span className="italic text-sd-acid">
+              opinionated
+            </span>{" "}
+            software
             <br />
             on the open web.
           </h2>
@@ -160,16 +168,16 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               to="/contact"
               className="inline-flex items-center justify-center border border-sd-fg bg-transparent px-[22px] py-[14px] font-sd-mono text-[12px] uppercase tracking-[0.08em] text-sd-fg no-underline transition-colors duration-150 hover:bg-sd-fg hover:text-sd-bg"
             >
-              SCHEDULE CALL
+              SEND A MESSAGE
             </Link>
           </div>
         </div>
 
-        {/* Stats row — hairline-divided cells keep the visual rhythm
-            even when individual values vary in width ("14 yrs" vs "∞").
-            Numbers use tabular-nums + whitespace-nowrap so they neither
-            re-flow nor visually shift as the digit counts change. */}
-        <div className="mt-12 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule md:grid-cols-4 xl:mt-16">
+        {/* Stats row — hairline-divided cells keep the visual rhythm even
+            when values vary in width ("11 yrs" vs "04"). Numbers use
+            tabular-nums + whitespace-nowrap so they neither re-flow nor
+            visually shift as the digit counts change. */}
+        <div className="mt-12 grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule sm:grid-cols-3 xl:mt-16">
           {statRows.map(({ n, label, to }) => {
             const cell = (
               <>
@@ -203,44 +211,35 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           })}
         </div>
 
-        {/* Marquee — edges fade to bg so the loop has no visible seam,
-            especially on wide / ultrawide where the content reveals
-            empty space at the wrap point. Fade width is a % of the
-            track so it scales naturally up through ultrawide. */}
-        <div
-          className="-mx-[18px] mt-9 overflow-hidden border-y border-sd-rule2 md:-mx-7 xl:-mx-8"
-          style={{
-            maskImage:
-              "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%)",
-          }}
-        >
-          <div className="flex w-max animate-sd-marquee whitespace-nowrap py-3.5 [animation-play-state:running] hover:[animation-play-state:paused]">
-            {[...MARQUEE_TOKENS, ...MARQUEE_TOKENS].map((t, i) => (
-              <span
-                key={`${t}-${i}`}
-                className={
-                  "mr-12 shrink-0 font-sd-display text-[24px] font-semibold md:text-[28px] xl:text-[32px] " +
-                  (i % 4 === 2 ? "text-sd-acid" : "text-sd-fg")
-                }
+        {/* Selected work — sits above the writing because the page's
+            job is to show what has been built, and a visitor should hit
+            evidence without a second scroll. */}
+        {featured.length > 0 && (
+          <section className="mt-12 xl:mt-16">
+            <div className="mb-[22px] flex items-baseline">
+              <span className={META}>SELECTED WORK</span>
+              <div className="mx-[18px] h-px flex-1 bg-sd-rule2" />
+              <Link
+                to="/projects"
+                className={`${META} text-sd-acid hover:underline`}
               >
-                {t}{" "}
-                <span className="mx-3 font-normal text-sd-faint">●</span>
-              </span>
-            ))}
-          </div>
-        </div>
+                ALL PROJECTS ↗
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule md:grid-cols-2">
+              {featured.map((p: ProjectCard, i: number) => (
+                <FeaturedProject key={p._id} project={p} index={i} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Latest dispatches */}
         <section className="mt-10">
           <div className="mb-[22px] flex items-baseline">
-            <span className={META}>§ 02 — LATEST DISPATCHES</span>
+            <span className={META}>LATEST DISPATCHES</span>
             <div className="mx-[18px] h-px flex-1 bg-sd-rule2" />
-            <Link
-              to="/blog"
-              className={`${META} text-sd-acid hover:underline`}
-            >
+            <Link to="/blog" className={`${META} text-sd-acid hover:underline`}>
               VIEW ALL ↗
             </Link>
           </div>
@@ -274,18 +273,14 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
       to={`/blog/${post.slug}`}
       className="group relative block border border-sd-rule2 bg-sd-bg p-[22px] no-underline transition-colors duration-150 hover:border-sd-fg"
     >
-      {/* Corner ticks */}
-      <span className="pointer-events-none absolute -left-px -top-px h-2.5 w-2.5 border-l border-t border-sd-acid" />
-      <span className="pointer-events-none absolute -bottom-px -right-px h-2.5 w-2.5 border-b border-r border-sd-acid" />
-
       <div className="mb-4 flex items-center gap-3">
-        <span className="font-sd-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-sd-acid">
+        <span className="font-sd-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-sd-acid">
           № {num}
         </span>
         {date && <span className={META}>{date}</span>}
         <span className="flex-1" />
         {primaryTag && (
-          <span className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[10px] uppercase tracking-[0.08em] text-sd-dim">
+          <span className="inline-flex items-center border border-sd-rule2 px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-dim">
             {primaryTag}
           </span>
         )}
@@ -308,3 +303,85 @@ function DispatchCard({ post, index }: { post: Post; index: number }) {
   );
 }
 
+function coverUrl(project: ProjectCard): string | null {
+  if (!project.mainImage) return null;
+  try {
+    return urlFor(project.mainImage).width(1200).height(750).fit("crop").url();
+  } catch {
+    return null;
+  }
+}
+
+function FeaturedProject({
+  project,
+  index,
+}: {
+  project: ProjectCard;
+  index: number;
+}) {
+  const cover = coverUrl(project);
+  const status = deriveStatus(project);
+  const num = String(index + 1).padStart(2, "0");
+
+  return (
+    <Link
+      to={`/projects/${project.slug}`}
+      className="group flex flex-col bg-sd-bg p-5 no-underline transition-colors duration-150 hover:bg-[#0e0e0e] md:p-6 xl:p-7"
+    >
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden border border-sd-rule2 bg-sd-panel bg-cover bg-center"
+        style={
+          project.mainImage?.lqip
+            ? { backgroundImage: `url(${project.mainImage.lqip})` }
+            : undefined
+        }
+      >
+        {cover && (
+          <img
+            src={cover}
+            alt={project.mainImage?.alt || project.title}
+            /* Above the fold on desktop — see the project index for the
+               same reasoning. */
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
+            width={1200}
+            height={750}
+            className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-90"
+          />
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-1 flex-col">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <span className={`${META} font-semibold text-sd-acid`}>№ {num}</span>
+          <span className="flex-1" />
+          <span
+            className={
+              "inline-flex items-center border px-2.5 py-[3px] font-sd-mono text-[11px] uppercase tracking-[0.08em] " +
+              status.color
+            }
+          >
+            {status.label}
+          </span>
+        </div>
+
+        <h3 className="m-0 font-sd-display text-[28px] font-bold leading-[1] tracking-[-0.02em] text-sd-fg transition-colors group-hover:text-sd-acid md:text-[34px]">
+          {project.title}
+        </h3>
+
+        {project.description && (
+          <p className="mt-3 line-clamp-2 text-[14px] leading-[1.6] text-sd-dim">
+            {project.description}
+          </p>
+        )}
+
+        <div className="mt-auto flex items-center gap-2 pt-5">
+          <span className={`${META} font-semibold text-sd-acid`}>
+            READ CASE STUDY →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}

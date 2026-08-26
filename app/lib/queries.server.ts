@@ -1,6 +1,11 @@
 import { client } from "./sanity";
+import { CAREER_START_YEAR } from "./site";
+import { estimateReadMinutes, wordCount } from "./markdown-render";
 import { stripMarkdown, truncateAtWord } from "./utils";
 
+// bodyMarkdown is fetched only so the reading estimate can be computed
+// from the real post rather than extrapolated from a snippet. withSnippet
+// strips it before the list is returned, so it never reaches the client.
 const POST_PROJECTION = `{
   _id,
   title,
@@ -9,12 +14,16 @@ const POST_PROJECTION = `{
   publishedAt,
   "tags": tags[]->{ _id, title, "slug": slug.current },
   "snippet": coalesce(excerpt, string::split(bodyMarkdown, "\\n")[0]),
+  bodyMarkdown,
 }`;
 
 function withSnippet(p: any) {
+  const { bodyMarkdown, ...rest } = p;
   return {
-    ...p,
+    ...rest,
     snippet: truncateAtWord(stripMarkdown(p.snippet ?? ""), 200, "…"),
+    words: wordCount(bodyMarkdown),
+    readMinutes: estimateReadMinutes(bodyMarkdown),
   };
 }
 
@@ -84,19 +93,90 @@ export async function listTags() {
   return client.fetch<any[]>(query);
 }
 
+// Card-level fields. Kept in one place so the projects index, the home
+// page's featured strip, and the detail page's "more work" rail can't
+// drift apart. Slug is flattened to a string here to match how posts are
+// projected — the raw { current } shape only ever caused call-site noise.
+const PROJECT_CARD_PROJECTION = `{
+  _id,
+  title,
+  "slug": slug.current,
+  mainImage{ ..., "lqip": asset->metadata.lqip },
+  description,
+  stack,
+  liveUrl,
+  githubUrl,
+  publishedAt,
+  featured
+}`;
+
 export async function listProjects() {
-  const query = `*[_type == "project"] | order(publishedAt desc) {
+  const query = `*[_type == "project" && defined(slug.current)]
+    | order(publishedAt desc, _id desc) ${PROJECT_CARD_PROJECTION}`;
+  return client.fetch<any[]>(query);
+}
+
+/**
+ * Projects for the home page's work strip. Falls back to the most recent
+ * projects when nothing is flagged, so the section is never empty — the
+ * home page should always show work, and a missing `featured` flag in the
+ * studio should not silently blank it.
+ */
+export async function featuredProjects(count = 2) {
+  const flagged = await client.fetch<any[]>(
+    `*[_type == "project" && defined(slug.current) && featured == true]
+      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+  );
+  if (flagged.length > 0) return flagged;
+
+  return client.fetch<any[]>(
+    `*[_type == "project" && defined(slug.current)]
+      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+  );
+}
+
+export async function listProjectSlugs() {
+  const query = `*[_type == "project" && defined(slug.current)]
+    | order(publishedAt desc, _id desc) { "slug": slug.current }.slug`;
+  return client.fetch<string[]>(query);
+}
+
+/**
+ * A project detail page plus the two neighbouring projects for the
+ * prev/next rail. Returns null when the slug doesn't resolve so the
+ * route can throw a proper 404 rather than rendering an empty shell.
+ */
+export async function getProject(slug: string) {
+  const projectQuery = `*[_type == "project" && slug.current == $slug][0]{
     _id,
     title,
-    slug,
-    mainImage,
+    "slug": slug.current,
+    mainImage{ ..., "lqip": asset->metadata.lqip },
     description,
     stack,
     liveUrl,
     githubUrl,
-    publishedAt
+    publishedAt,
+    featured,
+    role,
+    timeframe,
+    outcome,
+    bodyMarkdown,
+    gallery
   }`;
-  return client.fetch<any[]>(query);
+
+  const project = await client.fetch<any | null>(projectQuery, { slug });
+  if (!project) return null;
+
+  const moreQuery = `*[_type == "project" && defined(slug.current) && slug.current != $slug]
+    | order(publishedAt desc, _id desc) [0...2] {
+      _id,
+      title,
+      "slug": slug.current
+    }`;
+  const more = await client.fetch<any[]>(moreQuery, { slug });
+
+  return { project, more };
 }
 
 export type SiteSettings = {
@@ -128,8 +208,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-const CODING_SINCE_YEAR = 2012;
-
 export async function siteStats() {
   const query = `{
     "projects": count(*[_type == "project"]),
@@ -141,7 +219,7 @@ export async function siteStats() {
   }>(query);
 
   return {
-    years: Math.max(0, new Date().getFullYear() - CODING_SINCE_YEAR),
+    years: Math.max(0, new Date().getFullYear() - CAREER_START_YEAR),
     projects,
     posts,
   };

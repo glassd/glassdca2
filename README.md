@@ -1,87 +1,85 @@
-# Welcome to React Router!
+# glassd.ca
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Personal site and portfolio for David Glass. React Router 7 with SSR,
+content from Sanity, deployed as a Docker image by Dokploy on a VPS.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+Live at [glassd.ca](https://glassd.ca).
 
-## Features
+## Stack
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+| Piece     | Choice                                                      |
+| --------- | ----------------------------------------------------------- |
+| Framework | React Router 7 (SSR, not SPA mode)                          |
+| Content   | Sanity — posts, projects, tags, site settings               |
+| Styling   | Tailwind 4, with design tokens in `app/index.css`           |
+| Runtime   | Bun for install and scripts; Node runs the built server     |
+| Analytics | Self-hosted Umami, optional — see `deploy/README.md`        |
+| Mail      | Nodemailer over an Office 365 connector, transactional only |
 
-## Getting Started
+## Running it
 
-### Installation
+Bun only. There is no `package-lock.json` and adding one will conflict
+with `bun.lock`.
 
-Install the dependencies:
+    bun install
+    bun run dev
 
-```bash
-npm install
-```
+Serves on http://localhost:5173.
 
-### Development
+Copy `.env.example` to `.env` first. The site runs without any of it —
+Sanity content will just be missing, the contact form will fail at the
+send step, and no analytics will load.
 
-Start the development server with HMR:
+### Scripts
 
-```bash
-npm run dev
-```
+| Command             | Does                                            |
+| ------------------- | ----------------------------------------------- |
+| `bun run dev`       | Dev server with HMR                             |
+| `bun run typecheck` | Route typegen, then `tsc`                       |
+| `bun run lint`      | ESLint                                          |
+| `bun run test`      | Vitest                                          |
+| `bun run build`     | Production build to `build/`                    |
+| `bun run start`     | Serve a build                                   |
+| `bun run format`    | Prettier, **writes** — use `format:check` in CI |
 
-Your application will be available at `http://localhost:5173`.
+CI runs typecheck, lint, test and build on every push and pull request.
+`build` is worth running locally before pushing: it is the only step that
+catches a server-only module being imported into client code, which
+typecheck and dev will both let through.
 
-## Building for Production
+## Layout
 
-Create a production build:
+    app/
+      routes/          one file per route, registered in routes.ts
+      components/sd/   shared chrome (nav, footer, background grid)
+      lib/
+        queries.server.ts   all GROQ lives here
+        markdown.ts         remark/rehype plugin pipeline
+        markdown-render.tsx react-markdown mapping, heading + figure numbering
+        abuse.server.ts     contact form rate limiting and bot checks
+        analytics.ts        Umami event wrapper, no-op when not loaded
+        projects.ts         project types and status derivation
+        seo.ts / site.ts    canonical URLs, site constants
+    sanity-cms/        Sanity Studio, deployed separately
+    deploy/            Umami compose and the server runbook
 
-```bash
-npm run build
-```
+### Two things that surprise people
+
+**Sanity Studio does not deploy with the site.** It goes to Sanity's own
+hosting. After changing anything in `sanity-cms/schemaTypes/`, run
+`bun run deploy` from `sanity-cms/` or the new fields will not appear in
+the studio, even though the site is already querying them.
+
+**Server-only modules cannot be imported from component code.** React
+Router strips server code from `loader`, `action`, `headers` and
+`middleware` only. Importing `queries.server.ts` at the top level of a
+route component builds fine in dev and fails the production build. Shared
+constants belong in `lib/site.ts`.
 
 ## Deployment
 
-### Docker Deployment
+Dokploy builds from GitHub on push and runs the Dockerfile. Environment
+variables are set in Dokploy, not in the image.
 
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+`deploy/README.md` has the full first-time setup: analytics, the database,
+and the order to do things in.

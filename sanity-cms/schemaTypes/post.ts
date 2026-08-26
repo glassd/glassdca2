@@ -41,16 +41,6 @@ export default defineType({
         }),
       ],
     }),
-    // Legacy field — tags replaced categories. Hidden until content is
-    // confirmed migrated, then it can be deleted outright.
-    defineField({
-      name: 'categories',
-      title: 'Categories (legacy)',
-      type: 'array',
-      of: [{type: 'reference', to: {type: 'category'}}],
-      hidden: true,
-      readOnly: true,
-    }),
     defineField({
       name: 'publishedAt',
       title: 'Published at',
