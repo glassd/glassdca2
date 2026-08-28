@@ -192,6 +192,14 @@ export default function ProjectDetailRoute() {
   const year = projectYear(project.publishedAt);
   const heroAlt = project.mainImage?.alt || project.title;
 
+  // A project is allowed to be just a build: a title, a description, a
+  // stack and a link. Only lay out a reading column when there is
+  // something to read, so a demo does not render as a page with a hole
+  // in it — or worse, an apology for a case study nobody is owed.
+  const hasLongForm = Boolean(
+    project.bodyMarkdown || project.outcome || gallery.length > 0,
+  );
+
   const specs: Array<[string, string]> = [];
   if (project.role) specs.push(["ROLE", project.role]);
   if (project.timeframe) specs.push(["TIMEFRAME", project.timeframe]);
@@ -227,7 +235,7 @@ export default function ProjectDetailRoute() {
           </span>
           <div className="ml-3 hidden h-px flex-1 bg-sd-rule2 xl:block" />
           <span className="font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-faint">
-            § PROJECTS / CASE STUDY
+            § PROJECTS / {hasLongForm ? "CASE STUDY" : "BUILD"}
           </span>
         </div>
 
@@ -281,7 +289,12 @@ export default function ProjectDetailRoute() {
         )}
 
         {/* Body + spec sidebar */}
-        <div className="grid grid-cols-1 items-start gap-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:gap-14">
+        <div
+          className={
+            "grid grid-cols-1 items-start gap-10 xl:gap-14 " +
+            (hasLongForm ? "xl:grid-cols-[minmax(0,1fr)_280px]" : "")
+          }
+        >
           <div className="min-w-0">
             {project.bodyMarkdown ? (
               <article className="sd-post-body">
@@ -293,15 +306,7 @@ export default function ProjectDetailRoute() {
                   {project.bodyMarkdown}
                 </ReactMarkdown>
               </article>
-            ) : (
-              <div className="border border-sd-rule2 p-6">
-                <div className={`${META_ACID} mb-3`}>// WRITE-UP PENDING</div>
-                <p className="m-0 max-w-[560px] text-[15px] leading-[1.65] text-sd-dim">
-                  The full case study for this one isn&apos;t written yet. The
-                  spec and links are below in the meantime.
-                </p>
-              </div>
-            )}
+            ) : null}
 
             {project.outcome && (
               <section className="mt-12 border-t border-sd-rule2 pt-7">
@@ -348,9 +353,14 @@ export default function ProjectDetailRoute() {
 
           {/* Spec sheet — external links live here rather than as the
               primary action, so the case study gets read first. */}
-          <aside className="xl:sticky xl:top-6 xl:self-start">
+          <aside className={hasLongForm ? "xl:sticky xl:top-6 xl:self-start" : ""}>
             <div className={`${META_ACID} mb-3`}>// SPEC</div>
-            <dl className="m-0 grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule">
+            <dl
+              className={
+                "m-0 grid gap-px border border-sd-rule bg-sd-rule " +
+                (hasLongForm ? "grid-cols-1" : "grid-cols-2 md:grid-cols-4")
+              }
+            >
               {specs.map(([k, v]) => (
                 <div key={k} className="bg-sd-bg px-4 py-3">
                   <dt className={META}>{k}</dt>

@@ -378,7 +378,7 @@ function FeaturedProject({
 
         <div className="mt-auto flex items-center gap-2 pt-5">
           <span className={`${META} font-semibold text-sd-acid`}>
-            READ CASE STUDY →
+            {project.hasWriteUp ? "READ CASE STUDY →" : "VIEW PROJECT →"}
           </span>
         </div>
       </div>
