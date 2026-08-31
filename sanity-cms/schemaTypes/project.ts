@@ -59,7 +59,7 @@ export default defineType({
             group: 'card',
             of: [{type: 'string'}],
             options: {layout: 'tags'},
-            description: 'Short tech labels shown on the project card, e.g. REACT, POSTGRES.',
+            description: 'Short tech labels shown on the project card, e.g. REACT, POSTGRES. Press Enter after each one to turn it into a tag — anything left untokenized is discarded on save.',
         }),
         defineField({
             name: 'liveUrl',

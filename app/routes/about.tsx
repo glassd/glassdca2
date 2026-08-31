@@ -24,6 +24,11 @@ const TIMELINE: Array<[string, string]> = [
   ["2026", "Rebuilt the site from scratch. You are here."],
 ];
 
+// The strip used to read "6 MIN · UPDATED 2026.05", both hardcoded. The
+// reading estimate was wrong for a page this length, and the date went
+// stale the moment the timeline moved past it. Derive it instead.
+const lastTimelineYear = TIMELINE[TIMELINE.length - 1][0];
+
 const ELSEWHERE: Array<{ label: string; href: string }> = [
   { label: "GITHUB / GLASSD ↗", href: "https://github.com/glassd" },
   { label: "TWITTER / @DAGLASSD ↗", href: "https://x.com/daglassd" },
@@ -45,7 +50,7 @@ export default function About() {
         <div className="mb-7 flex flex-wrap items-baseline gap-x-5 gap-y-2 md:mb-9">
           <span className={META}>ON THE AUTHOR</span>
           <div className="hidden h-px flex-1 bg-sd-rule2 md:block" />
-          <span className={META}>6 MIN · UPDATED 2026.05</span>
+          <span className={META}>LAST UPDATED {lastTimelineYear}</span>
         </div>
 
         {/* Hero */}
