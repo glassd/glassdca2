@@ -15,6 +15,8 @@ export type ProjectCard = {
   githubUrl?: string;
   publishedAt?: string;
   featured?: boolean;
+  /** True when the project carries a case study rather than just a card. */
+  hasWriteUp?: boolean;
 };
 
 export type ProjectDetail = ProjectCard & {

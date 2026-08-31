@@ -107,7 +107,8 @@ const PROJECT_CARD_PROJECTION = `{
   liveUrl,
   githubUrl,
   publishedAt,
-  featured
+  featured,
+  "hasWriteUp": defined(bodyMarkdown)
 }`;
 
 export async function listProjects() {

@@ -176,7 +176,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
         <div className="mt-auto flex items-center gap-2 pt-6">
           <span className={`${META_ACID} font-semibold`}>
-            READ CASE STUDY →
+            {project.hasWriteUp ? "READ CASE STUDY →" : "VIEW PROJECT →"}
           </span>
         </div>
       </div>
