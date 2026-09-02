@@ -10,6 +10,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { SITE_NAME } from "~/lib/seo";
 import "./app.css";
 import "./index.css";
 import SDNav from "./components/sd/SDNav";
@@ -27,6 +28,16 @@ export function loader() {
   return {
     analytics: src && websiteId ? { src, websiteId } : null,
   };
+}
+
+/**
+ * Fallback title. Route-level meta does not run when a loader throws, so
+ * without this every error page — a bad URL, a missing post, a missing
+ * project — renders with no <title> at all and the browser tab falls back
+ * to showing the raw URL. Child routes override this on success.
+ */
+export function meta(_args: Route.MetaArgs) {
+  return [{ title: SITE_NAME }];
 }
 
 export const links: Route.LinksFunction = () => [

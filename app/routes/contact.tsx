@@ -335,6 +335,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
                   label="EMAIL"
                   placeholder="you@somewhere.com"
                   error={data?.errors?.email}
+                  autoComplete="email"
                   required
                 />
                 <FormField
@@ -394,6 +395,7 @@ function FormField({
   required,
   maxLength,
   rows,
+  autoComplete,
 }: {
   id: "email" | "subject" | "message";
   type: "email" | "text" | "textarea";
@@ -404,9 +406,15 @@ function FormField({
   required?: boolean;
   maxLength?: number;
   rows?: number;
+  autoComplete?: string;
 }) {
   const base =
     "w-full bg-transparent border-0 border-b border-sd-fg pb-2 pt-1 font-sd-mono text-[16px] text-sd-fg placeholder:text-sd-faint focus:border-sd-acid focus:outline-none transition-colors";
+
+  // Wire the error to the field so a screen reader hears it on focus
+  // rather than only seeing it rendered further down the page.
+  const errorId = `${id}-error`;
+  const describedBy = error ? errorId : undefined;
 
   return (
     <div>
@@ -414,7 +422,11 @@ function FormField({
         htmlFor={id}
         className={`${FIELD_LABEL} mb-2 flex items-baseline gap-2`}
       >
-        <span className="text-sd-acid">{number} —</span>
+        {/* Decorative sequence number — announcing "01 dash email" helps
+            nobody, so keep it out of the accessible name. */}
+        <span className="text-sd-acid" aria-hidden="true">
+          {number} —
+        </span>
         <span>{label}</span>
       </label>
       {type === "textarea" ? (
@@ -425,6 +437,9 @@ function FormField({
           maxLength={maxLength}
           rows={rows}
           placeholder={placeholder}
+          autoComplete={autoComplete}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={`${base} min-h-[120px] resize-y leading-[1.5]`}
         />
       ) : (
@@ -435,11 +450,17 @@ function FormField({
           required={required}
           maxLength={maxLength}
           placeholder={placeholder}
+          autoComplete={autoComplete}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={base}
         />
       )}
       {error && (
-        <p className="mt-1.5 font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid">
+        <p
+          id={errorId}
+          className="mt-1.5 font-sd-mono text-[11px] uppercase tracking-[0.08em] text-sd-acid"
+        >
           {error}
         </p>
       )}
