@@ -40,3 +40,54 @@ export function seoMeta({
 
   return meta;
 }
+
+type PostSeoSource = {
+  slug?: string | null;
+  title?: string | null;
+  excerpt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  canonicalUrl?: string | null;
+  noindex?: boolean | null;
+};
+
+export type ResolvedPostSeo = {
+  title: string;
+  description: string;
+  canonical: string;
+  noindex: boolean;
+};
+
+function firstNonEmpty(...values: Array<string | null | undefined>) {
+  for (const v of values) {
+    const trimmed = (v || "").trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+}
+
+/**
+ * Resolve what a post should tell search engines.
+ *
+ * Each value prefers an explicit SEO override, then the editorial field,
+ * then a generic fallback. A whitespace-only override counts as unset, so
+ * clearing a field in the studio restores the default rather than
+ * publishing a blank description.
+ */
+export function resolvePostSeo(post: PostSeoSource | null | undefined): ResolvedPostSeo {
+  const title =
+    firstNonEmpty(post?.seoTitle) ||
+    (firstNonEmpty(post?.title) ? `${firstNonEmpty(post?.title)} · Blog` : "") ||
+    "Blog Post";
+
+  const description =
+    firstNonEmpty(post?.seoDescription, post?.excerpt) || "Read this blog post.";
+
+  // A canonical pointing elsewhere means the post ran somewhere else
+  // first, and the original should get the credit.
+  const canonical =
+    firstNonEmpty(post?.canonicalUrl) ||
+    `${SITE_URL}/blog/${post?.slug ?? ""}`;
+
+  return { title, description, canonical, noindex: post?.noindex === true };
+}

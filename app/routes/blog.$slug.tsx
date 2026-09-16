@@ -8,6 +8,7 @@ import {
   SITE_NAME,
   TWITTER_HANDLE,
   DEFAULT_OG_IMAGE,
+  resolvePostSeo,
 } from "~/lib/seo";
 import ReactMarkdown from "react-markdown";
 import { POST_REMARK_PLUGINS, POST_REHYPE_PLUGINS } from "../lib/markdown";
@@ -36,6 +37,10 @@ type Post = {
   bodyMarkdown?: string | null;
   excerpt?: string | null;
   author?: { name?: string | null } | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  canonicalUrl?: string | null;
+  noindex?: boolean | null;
 };
 
 type RelatedPost = {
@@ -72,7 +77,11 @@ export async function loader({ params }: Route.LoaderArgs) {
     bodyMarkdown,
     excerpt,
     "author": author->{ name },
-    "tagSlugs": tags[]->slug.current
+    "tagSlugs": tags[]->slug.current,
+    seoTitle,
+    seoDescription,
+    canonicalUrl,
+    noindex
   }`;
 
   const tagsQuery = `*[_type == "tag"] | order(title asc) { _id, title, "slug": slug.current }`;
@@ -120,10 +129,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 export function meta({ data }: Route.MetaArgs) {
   const loaderData = data as { post: Post } | undefined;
   const post = loaderData?.post;
-  const title = post?.title ? `${post.title} · Blog` : "Blog Post";
-  const description = (post?.excerpt || "").trim() || "Read this blog post.";
-
-  const canonical = `${SITE_URL}/blog/${post?.slug ?? ""}`;
+  const { title, description, canonical, noindex } = resolvePostSeo(post);
 
   const rawImage = post?.mainImage
     ? urlFor(post.mainImage).width(1200).height(630).fit("crop").url()
@@ -134,6 +140,7 @@ export function meta({ data }: Route.MetaArgs) {
     { title },
     { name: "description", content: description },
     { tagName: "link", rel: "canonical", href: canonical },
+    ...(noindex ? [{ name: "robots", content: "noindex, nofollow" }] : []),
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:type", content: "article" },
