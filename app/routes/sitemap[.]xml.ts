@@ -5,7 +5,10 @@ import { listProjectSlugs } from "../lib/queries.server";
 export async function loader() {
   const [slugs, projectSlugs] = await Promise.all([
     client.fetch<string[]>(
-      `*[_type == "post" && defined(publishedAt)] | order(publishedAt desc) { "slug": slug.current }.slug`,
+      // noindex posts are left out on purpose: listing a URL in the
+      // sitemap asks a crawler to index it, which contradicts the robots
+      // tag on the page itself.
+      `*[_type == "post" && defined(publishedAt) && noindex != true] | order(publishedAt desc) { "slug": slug.current }.slug`,
     ),
     listProjectSlugs(),
   ]);
