@@ -16,12 +16,27 @@ const META_ACID =
   "font-sd-mono text-[11px] uppercase tracking-[0.1em] text-sd-acid";
 
 const TIMELINE: Array<[string, string]> = [
-  ["2011", "Started CS degree."],
-  ["2015", 'Took the first "real" job — in IT, not dev.'],
-  ["2018", "Promoted into systems & network ops."],
-  ["2023", "Quit ops. Started writing software again, full-time."],
+  [
+    "2010",
+    "Help desk at St. Lawrence College, still in the programming diploma.",
+  ],
+  [
+    "2011",
+    "Systems Officer at the Ministry of Health. COBOL mainframe, JSF front end, physician billing.",
+  ],
+  ["2012", "Graduated. Sysadmin at CRMS in Kingston."],
+  [
+    "2015",
+    "Pan Am Games venue tech, then Technical Lead at Qubyte for five years.",
+  ],
+  ["2021", "IT Manager at Morbern."],
+  [
+    "2022",
+    "Back to software full-time. Senior Development Consultant at Co-operators.",
+  ],
   ["2024", "Launched glassd.ca · v1."],
-  ["2026", "Rebuilt the site from scratch. You are here."],
+  ["2025", "Pulsio."],
+  ["2026", "Rebuilt the site. Pixmith. You are here."],
 ];
 
 // The strip used to read "6 MIN · UPDATED 2026.05", both hardcoded. The
@@ -78,17 +93,17 @@ export default function About() {
               trying to get back behind the wheel.
             </p>
             <p className="my-[22px]">
-              I went to school for software development, fully expecting to
-              write code for a living. Like most plans, that didn&apos;t quite
-              survive contact with reality. I ended up in IT, managing systems,
-              building networks, and keeping other people&apos;s stuff running.
+              I went to school for software development and my first job out of
+              it was writing code, on a mainframe billing system. Then I drifted
+              into IT for a decade: managing systems, building networks, keeping
+              other people&apos;s stuff running.
             </p>
             <p className="my-[22px]">
-              A couple of years ago I made the jump back to what I really wanted
-              to do: building software. That&apos;s what led to this site.
+              In 2022 I made the jump back to building software. That&apos;s
+              what led to this site.
             </p>
             <p className="my-[22px]">
-              I&apos;m especially interested in AI right now — how it can
+              I&apos;m especially interested in AI right now: how it can
               actually be useful, where it goes off the rails, and what it means
               for the way we work and live. I&apos;ll keep building, breaking
               things, and writing about what I learn.
