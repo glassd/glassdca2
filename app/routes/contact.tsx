@@ -226,9 +226,8 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
           {/* Left: direct contact + status */}
           <div>
             <p className="m-0 max-w-[460px] text-[14px] leading-[1.65] text-sd-dim md:text-[16px]">
-              Project inquiries, recruiting, or just &ldquo;hey I liked your
-              post&rdquo;: all welcome. I read everything and reply within a
-              day.
+              If you&apos;re hiring, or know of a role you think I&apos;d fit,
+              send me a message. Same goes if you just liked a post.
             </p>
 
             <div className="mt-9 grid grid-cols-2 gap-px border border-sd-rule bg-sd-rule">
@@ -266,15 +265,9 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
               <div className={`${META_ACID} mb-3`}>// WHAT HAPPENS NEXT</div>
               <ol className="m-0 list-none border-t border-sd-rule p-0">
                 {[
-                  ["01", "I read it. Every message, same day."],
-                  [
-                    "02",
-                    "You get a reply within 24 hours, usually with a call link if it's a project.",
-                  ],
-                  [
-                    "03",
-                    "If we're a fit, we scope it and pick a first ship date.",
-                  ],
+                  ["01", "I read every message."],
+                  ["02", "You get a reply within a day."],
+                  ["03", "If it's about a role, we set up a time to talk."],
                 ].map(([n, text]) => (
                   <li
                     key={n}
@@ -343,7 +336,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
                   type="text"
                   number="02"
                   label="SUBJECT"
-                  placeholder="quick chat about a project"
+                  placeholder="a role you're hiring for"
                   maxLength={200}
                   error={data?.errors?.subject}
                   required
