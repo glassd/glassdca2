@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, data, useLoaderData } from "react-router";
+import { Link, data, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/projects.$slug";
 import ReactMarkdown from "react-markdown";
 import { urlFor } from "../lib/sanity";
@@ -9,6 +9,7 @@ import {
   SITE_NAME,
   TWITTER_HANDLE,
   DEFAULT_OG_IMAGE,
+  resolveProjectDescription,
 } from "~/lib/seo";
 import { POST_REMARK_PLUGINS, POST_REHYPE_PLUGINS } from "../lib/markdown";
 import {
@@ -16,7 +17,12 @@ import {
   buildImageIndex,
   useMarkdownComponents,
 } from "../lib/markdown-render";
-import { deriveStatus, projectYear, type ProjectDetail } from "../lib/projects";
+import {
+  deriveStatus,
+  LEGACY_PROJECT_SLUGS,
+  projectYear,
+  type ProjectDetail,
+} from "../lib/projects";
 import { EVENTS, track } from "../lib/analytics";
 
 type MoreProject = { _id: string; title: string; slug: string };
@@ -40,6 +46,10 @@ export async function loader({ params }: Route.LoaderArgs) {
 
   const result = await getProject(slug);
   if (!result) {
+    // Checked only after the lookup misses, so a live document at an old
+    // slug still wins and the redirect can ship before the content moves.
+    const moved = LEGACY_PROJECT_SLUGS[slug];
+    if (moved) throw redirect(`/projects/${moved}`, 301);
     throw new Response("Project not found", { status: 404 });
   }
 
@@ -53,9 +63,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 export function meta({ data: loaderData }: Route.MetaArgs) {
   const project = (loaderData as LoaderData | undefined)?.project;
   const title = project?.title ? `${project.title} — Project` : "Project";
-  const description =
-    (project?.description || "").trim() ||
-    "A project by David Glass — what it does, how it's built, and what it cost to get there.";
+  const description = resolveProjectDescription(project);
   const canonical = `${SITE_URL}/projects/${project?.slug ?? ""}`;
 
   let ogImage = DEFAULT_OG_IMAGE;
@@ -353,7 +361,9 @@ export default function ProjectDetailRoute() {
 
           {/* Spec sheet — external links live here rather than as the
               primary action, so the case study gets read first. */}
-          <aside className={hasLongForm ? "xl:sticky xl:top-6 xl:self-start" : ""}>
+          <aside
+            className={hasLongForm ? "xl:sticky xl:top-6 xl:self-start" : ""}
+          >
             <div className={`${META_ACID} mb-3`}>// SPEC</div>
             <dl
               className={
