@@ -143,7 +143,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         {/* Subheading row */}
         <div className="mt-7 grid grid-cols-1 items-end gap-7 md:mt-9 md:grid-cols-[1fr_minmax(220px,280px)] md:gap-8 xl:grid-cols-[1.1fr_1fr_minmax(260px,320px)] xl:gap-10">
           <h2 className="font-sd-display text-[22px] font-medium leading-[1.1] tracking-[-0.02em] text-sd-fg md:text-[28px] md:leading-[1.05] xl:text-[32px]">
-            Full-stack engineer
+            Full-stack developer
             <br />
             shipping <span className="italic text-sd-acid">
               opinionated
@@ -174,7 +174,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         </div>
 
         {/* Stats row — hairline-divided cells keep the visual rhythm even
-            when values vary in width ("11 yrs" vs "04"). Numbers use
+            when values vary in width ("15 yrs" vs "04"). Numbers use
             tabular-nums + whitespace-nowrap so they neither re-flow nor
             visually shift as the digit counts change. */}
         <div className="mt-12 grid grid-cols-1 gap-px border border-sd-rule bg-sd-rule sm:grid-cols-3 xl:mt-16">

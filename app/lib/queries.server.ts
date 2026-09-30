@@ -188,7 +188,7 @@ export type SiteSettings = {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   available: true,
-  availabilityLabel: "AVAILABLE NOW",
+  availabilityLabel: "OPEN TO NEW ROLES",
   availabilityDetail: "OPEN TO NEW PROJECTS",
 };
 
