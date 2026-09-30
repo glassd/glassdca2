@@ -86,6 +86,14 @@ export default defineType({
             group: 'card',
         }),
         defineField({
+            name: 'year',
+            title: 'Year shipped',
+            type: 'number',
+            group: 'card',
+            description: 'Year the project shipped. Overrides the publish date for display.',
+            validation: (Rule) => Rule.integer().min(2000).max(2100),
+        }),
+        defineField({
             name: 'featured',
             title: 'Featured',
             type: 'boolean',

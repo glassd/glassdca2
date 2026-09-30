@@ -14,6 +14,8 @@ export type ProjectCard = {
   liveUrl?: string;
   githubUrl?: string;
   publishedAt?: string;
+  /** Year it shipped, set by hand. Wins over publishedAt for display. */
+  year?: number | null;
   featured?: boolean;
   /** True when the project carries a case study rather than just a card. */
   hasWriteUp?: boolean;
@@ -58,9 +60,14 @@ export function deriveStatus(
   return { label: "ARCHIVED", color: "text-sd-faint border-sd-faint" };
 }
 
-export function projectYear(iso?: string) {
-  if (!iso) return null;
-  const d = new Date(iso);
+/**
+ * The year a project shipped. Write-ups often land long after the work,
+ * so the publish date is only a fallback for when the year isn't set.
+ */
+export function projectYear(p: Pick<ProjectCard, "year" | "publishedAt">) {
+  if (p.year) return String(p.year);
+  if (!p.publishedAt) return null;
+  const d = new Date(p.publishedAt);
   if (Number.isNaN(d.getTime())) return null;
   return String(d.getFullYear());
 }
