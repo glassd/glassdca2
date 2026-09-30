@@ -227,7 +227,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
           <div>
             <p className="m-0 max-w-[460px] text-[14px] leading-[1.65] text-sd-dim md:text-[16px]">
               Project inquiries, recruiting, or just &ldquo;hey I liked your
-              post&rdquo; — all welcome. I read everything and reply within a
+              post&rdquo;: all welcome. I read everything and reply within a
               day.
             </p>
 
@@ -269,7 +269,7 @@ export default function Contact({ loaderData }: Route.ComponentProps) {
                   ["01", "I read it. Every message, same day."],
                   [
                     "02",
-                    "You get a reply within 24 hours — usually with a call link if it's a project.",
+                    "You get a reply within 24 hours, usually with a call link if it's a project.",
                   ],
                   [
                     "03",

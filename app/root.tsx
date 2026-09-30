@@ -112,7 +112,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     if (error.status === 404) {
       title = "Page not found.";
       details =
-        "The page you were looking for doesn't exist — or it moved without telling anyone.";
+        "The page you were looking for doesn't exist, or it moved without telling anyone.";
     } else {
       title = error.statusText || "Something broke.";
       details = error.statusText || details;
