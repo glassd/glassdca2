@@ -13,4 +13,10 @@ export default defineCliConfig({
      */
     autoUpdates: true,
   },
+  // Schema extraction (run by `sanity deploy`) pushes every dependency
+  // through Vite untransformed, which breaks CommonJS packages. lexorank,
+  // pulled in by the orderable list plugin, is one, so let Node load it.
+  vite: {
+    ssr: {external: ['lexorank']},
+  },
 })
