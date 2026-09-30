@@ -91,7 +91,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   }, [project.mainImage]);
 
   const num = String(index + 1).padStart(2, "0");
-  const yr = projectYear(project.publishedAt);
+  const yr = projectYear(project);
   const status = deriveStatus(project);
 
   // The grid is two-up, so the first row is above the fold on every

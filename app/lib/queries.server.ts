@@ -112,6 +112,7 @@ const PROJECT_CARD_PROJECTION = `{
   liveUrl,
   githubUrl,
   publishedAt,
+  year,
   featured,
   "hasWriteUp": defined(bodyMarkdown)
 }`;
@@ -164,6 +165,7 @@ export async function getProject(slug: string) {
     liveUrl,
     githubUrl,
     publishedAt,
+    year,
     featured,
     role,
     timeframe,

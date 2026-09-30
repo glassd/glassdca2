@@ -197,7 +197,7 @@ export default function ProjectDetailRoute() {
   const galleryFigStart = (hero ? 1 : 0) + imgFigs.size + 1;
 
   const status = deriveStatus(project);
-  const year = projectYear(project.publishedAt);
+  const year = projectYear(project);
   const heroAlt = project.mainImage?.alt || project.title;
 
   // A project is allowed to be just a build: a title, a description, a
