@@ -97,6 +97,11 @@ export async function listTags() {
 // page's featured strip, and the detail page's "more work" rail can't
 // drift apart. Slug is flattened to a string here to match how posts are
 // projected — the raw { current } shape only ever caused call-site noise.
+// Projects are ordered by hand in the studio (drag and drop, stored as
+// orderRank). Anything not yet ranked sorts after the ranked ones, newest
+// first, so a fresh project never disappears while it waits to be placed.
+const PROJECT_ORDER = "order(orderRank asc, publishedAt desc, _id desc)";
+
 const PROJECT_CARD_PROJECTION = `{
   _id,
   title,
@@ -113,7 +118,7 @@ const PROJECT_CARD_PROJECTION = `{
 
 export async function listProjects() {
   const query = `*[_type == "project" && defined(slug.current)]
-    | order(publishedAt desc, _id desc) ${PROJECT_CARD_PROJECTION}`;
+    | ${PROJECT_ORDER} ${PROJECT_CARD_PROJECTION}`;
   return client.fetch<any[]>(query);
 }
 
@@ -126,19 +131,19 @@ export async function listProjects() {
 export async function featuredProjects(count = 2) {
   const flagged = await client.fetch<any[]>(
     `*[_type == "project" && defined(slug.current) && featured == true]
-      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+      | ${PROJECT_ORDER} [0...${count}] ${PROJECT_CARD_PROJECTION}`,
   );
   if (flagged.length > 0) return flagged;
 
   return client.fetch<any[]>(
     `*[_type == "project" && defined(slug.current)]
-      | order(publishedAt desc, _id desc) [0...${count}] ${PROJECT_CARD_PROJECTION}`,
+      | ${PROJECT_ORDER} [0...${count}] ${PROJECT_CARD_PROJECTION}`,
   );
 }
 
 export async function listProjectSlugs() {
   const query = `*[_type == "project" && defined(slug.current)]
-    | order(publishedAt desc, _id desc) { "slug": slug.current }.slug`;
+    | ${PROJECT_ORDER} { "slug": slug.current }.slug`;
   return client.fetch<string[]>(query);
 }
 
@@ -154,6 +159,7 @@ export async function getProject(slug: string) {
     "slug": slug.current,
     mainImage{ ..., "lqip": asset->metadata.lqip },
     description,
+    seoDescription,
     stack,
     liveUrl,
     githubUrl,
@@ -170,7 +176,7 @@ export async function getProject(slug: string) {
   if (!project) return null;
 
   const moreQuery = `*[_type == "project" && defined(slug.current) && slug.current != $slug]
-    | order(publishedAt desc, _id desc) [0...2] {
+    | ${PROJECT_ORDER} [0...2] {
       _id,
       title,
       "slug": slug.current
@@ -188,7 +194,7 @@ export type SiteSettings = {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   available: true,
-  availabilityLabel: "AVAILABLE NOW",
+  availabilityLabel: "OPEN TO NEW ROLES",
   availabilityDetail: "OPEN TO NEW PROJECTS",
 };
 

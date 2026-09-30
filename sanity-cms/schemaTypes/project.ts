@@ -1,4 +1,5 @@
 import { defineField, defineType } from 'sanity'
+import {orderRankField, orderRankOrdering} from '@sanity/orderable-document-list'
 
 export default defineType({
     name: 'project',
@@ -8,8 +9,13 @@ export default defineType({
         {name: 'card', title: 'Card', default: true},
         {name: 'study', title: 'Case study'},
         {name: 'media', title: 'Media'},
+        {name: 'seo', title: 'SEO'},
     ],
+    // Order is set by dragging in the Projects list, not by typing numbers,
+    // so adding one in the middle never means renumbering the rest.
+    orderings: [orderRankOrdering],
     fields: [
+        orderRankField({type: 'project'}),
         defineField({
             name: 'title',
             title: 'Title',
@@ -50,7 +56,7 @@ export default defineType({
             title: 'Description',
             type: 'text',
             group: 'card',
-            description: 'One or two sentences. Shown on the project card and used as the meta description.',
+            description: 'One or two sentences. Shown on the project card, and used as the meta description unless the SEO tab overrides it.',
         }),
         defineField({
             name: 'stack',
@@ -123,6 +129,18 @@ export default defineType({
             rows: 30,
             description:
                 'Four H2 sections, same order every time: Problem, Approach, Tradeoffs, Outcome. Tradeoffs is the one that matters — what you rejected and why. Outcome is for what happened, not for what you wish had happened.',
+        }),
+
+        // ─── SEO ───
+        defineField({
+            name: 'seoDescription',
+            title: 'Meta description',
+            type: 'text',
+            rows: 3,
+            group: 'seo',
+            description:
+                'What search engines and link previews show. Falls back to the description. Aim for under 155 characters.',
+            validation: (Rule) => Rule.max(160).warning('Likely to be truncated in search results.'),
         }),
 
         // ─── Media ───

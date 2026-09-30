@@ -74,20 +74,43 @@ function firstNonEmpty(...values: Array<string | null | undefined>) {
  * clearing a field in the studio restores the default rather than
  * publishing a blank description.
  */
-export function resolvePostSeo(post: PostSeoSource | null | undefined): ResolvedPostSeo {
+export function resolvePostSeo(
+  post: PostSeoSource | null | undefined,
+): ResolvedPostSeo {
   const title =
     firstNonEmpty(post?.seoTitle) ||
-    (firstNonEmpty(post?.title) ? `${firstNonEmpty(post?.title)} · Blog` : "") ||
+    (firstNonEmpty(post?.title)
+      ? `${firstNonEmpty(post?.title)} · Blog`
+      : "") ||
     "Blog Post";
 
   const description =
-    firstNonEmpty(post?.seoDescription, post?.excerpt) || "Read this blog post.";
+    firstNonEmpty(post?.seoDescription, post?.excerpt) ||
+    "Read this blog post.";
 
   // A canonical pointing elsewhere means the post ran somewhere else
   // first, and the original should get the credit.
   const canonical =
-    firstNonEmpty(post?.canonicalUrl) ||
-    `${SITE_URL}/blog/${post?.slug ?? ""}`;
+    firstNonEmpty(post?.canonicalUrl) || `${SITE_URL}/blog/${post?.slug ?? ""}`;
 
   return { title, description, canonical, noindex: post?.noindex === true };
+}
+
+export const DEFAULT_PROJECT_DESCRIPTION =
+  "A project by David Glass: what it does, how it's built, and what it cost to get there.";
+
+/**
+ * Same precedence as posts: the SEO override, then the card description,
+ * then a generic line. Blank overrides count as unset.
+ */
+export function resolveProjectDescription(
+  project:
+    | { seoDescription?: string | null; description?: string | null }
+    | null
+    | undefined,
+) {
+  return (
+    firstNonEmpty(project?.seoDescription, project?.description) ||
+    DEFAULT_PROJECT_DESCRIPTION
+  );
 }

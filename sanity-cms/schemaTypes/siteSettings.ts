@@ -18,8 +18,8 @@ export default defineType({
       name: 'availabilityLabel',
       title: 'Availability badge (home)',
       type: 'string',
-      description: 'Short badge text, e.g. "AVAILABLE NOW" or "BOOKED UNTIL Q1".',
-      initialValue: 'AVAILABLE NOW',
+      description: 'Short badge text, e.g. "OPEN TO NEW ROLES" or "BOOKED UNTIL Q1".',
+      initialValue: 'OPEN TO NEW ROLES',
     }),
     defineField({
       name: 'availabilityDetail',

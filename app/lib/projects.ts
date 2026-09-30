@@ -20,6 +20,7 @@ export type ProjectCard = {
 };
 
 export type ProjectDetail = ProjectCard & {
+  seoDescription?: string;
   role?: string;
   timeframe?: string;
   outcome?: string;
@@ -27,6 +28,16 @@ export type ProjectDetail = ProjectCard & {
   gallery?: Array<
     { _key?: string; alt?: string; caption?: string } & Record<string, any>
   >;
+};
+
+/**
+ * Old project slugs that now live somewhere else. The two "Profile Page"
+ * entries were merged into a single glassd.ca project, and both of their
+ * URLs had been public.
+ */
+export const LEGACY_PROJECT_SLUGS: Record<string, string> = {
+  "profile-page": "glassd-ca",
+  "profile-page-v2": "glassd-ca",
 };
 
 export type ProjectStatus = {

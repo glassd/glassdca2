@@ -36,7 +36,7 @@ export default function ContactSent() {
 
         <p className="mb-10 max-w-[640px] text-[15px] leading-[1.7] text-sd-dim md:text-[17px]">
           Thanks for reaching out. Your message was delivered and I&apos;ll get
-          back to you as soon as I can — usually within a day.
+          back to you as soon as I can, usually within a day.
         </p>
 
         <div className="grid grid-cols-1 gap-3 md:flex md:flex-wrap md:gap-3">
