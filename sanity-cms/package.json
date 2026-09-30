@@ -16,17 +16,17 @@
   ],
   "dependencies": {
     "@sanity/orderable-document-list": "^2.0.25",
-    "@sanity/vision": "^6.14.1",
+    "@sanity/vision": "^6.17.0",
     "easymde": "^2.21.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "sanity": "^6.14.1",
-    "sanity-plugin-markdown": "^9.0.13",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sanity": "^6.17.0",
+    "sanity-plugin-markdown": "^9.0.14",
     "styled-components": "^6.5.3"
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.2",
-    "@types/react": "^19.2.18",
+    "@types/react": "^19.3.0",
     "eslint": "^9.39.5",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3"
